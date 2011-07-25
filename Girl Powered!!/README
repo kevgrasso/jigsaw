@@ -1,1 +1,15 @@
-This project is a platformer made using Javascript and HTML Canvas
+GIRL POWERED!! BY KEVIN GRASSO
+A Javascript platformer for HTML5 Canvas.
+
+Recomended browsers:
+Google Chrome ?
+Mozilla Firefox ?
+Safari ?
+Opera ?
+Internet Explorer 9+
+
+~CHANGELOG~
+Proto1:
+*project exists
+*event, input, collision, viewport, actor, and map systems under construction
+*basic player physics  
