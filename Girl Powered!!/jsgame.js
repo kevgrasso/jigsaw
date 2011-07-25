@@ -595,7 +595,7 @@ INPUT = (function () {
 			var x, y;
 			for (y = 0; y < arguments.length; y += 2) {
 				x = this.data;
-				this.data = [ ];
+				this.data = [];
 				
 				this.data[0] = (x[0]*y[0])+(x[1]*y[3]);
 				this.data[1] = (x[1]*y[2])+(x[2]*y[4]);
@@ -1325,7 +1325,7 @@ INPUT = (function () {
 		testShape = {
 		
 			boxbox: function (a, b) { //hide
-				//If any of the sides from shape1 are outside of shape2 //TODO: doesn't take actors into account
+				//If any of the sides from shape1 are outside of shape2
 				return (a.bottom >= b.top && a.top <= b.bottom && a.right >= b.left && a.left <= b.right);
 			},
 			circlecircle: function (a, b) { //hide
