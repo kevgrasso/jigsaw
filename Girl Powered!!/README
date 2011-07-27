@@ -12,4 +12,5 @@ Internet Explorer 9+
 Proto1:
 *project exists
 *event, input, collision, viewport, actor, and map systems under construction
-*basic player physics  
+*basic player physics 
+*using pixastic library 

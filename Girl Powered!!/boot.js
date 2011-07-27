@@ -42,7 +42,7 @@
 //for rewrite:
 //--get rid of unnessessary upvars in collision
 //--put intersection test into shapes
-//shape has ejection fuction
+//--shape has ejection fuction
 //--setup VIEWPORT properly
 //remove FRAGMENT
 //triggers with expiration times
@@ -494,7 +494,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		
 		},
 		
-		isBlocking: function (x, y) {
+		isBlocking: function (x, y, isBottom) {
 			x = x || 0;
 			y = y || 0;
 			
@@ -518,9 +518,9 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 				return !this.attrib.attrib; //blocks if off
 				
 			case 'lslope':
-				return y > 0 || x < 0;
+				return isBottom || y > 0 || x < 0;
 			case 'rslope':
-				return y > 0 || x > 0;
+				return isBottom || y > 0 || x > 0;
 			
 			}
 		}

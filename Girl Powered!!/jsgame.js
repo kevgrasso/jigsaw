@@ -1413,6 +1413,8 @@ INPUT = (function () {
 		this.parent = spec.parent;
 		this.pool = spec.pool;
 		
+		this.x = spec.x;
+		this.y = spec.y;
 		this.relx = spec.relx;
 		this.rely = spec.rely;
 	}, {
@@ -1420,8 +1422,18 @@ INPUT = (function () {
 		type: null,
 		pool: null,
 		
+		x: 0,
+		y: 0,
+		
 		relx: 0,
 		rely: 0,
+		
+		getX: function () {
+			return this.parent ? this.parent.x+this.relx : this.x;
+		},
+		getY: function () {
+			return this.parent ? this.parent.y+this.rely : this.y;
+		},
 		
 		isColliding: function (otherShape) { 
 			//select appropriate insection detection algorithm
@@ -1432,6 +1444,42 @@ INPUT = (function () {
 				return testShape[testName](getAttrib(this), getAttrib(otherShape));
 			} else {
 				return testShape[otherShape.type + this.type](getAttrib(otherShape), getAttrib(this));
+			}
+		},
+		
+		ejectShape: function (other, dXOther, dYOther, dXThis, dYThis) {
+			//this function assumes this and otherShape are colliding.
+			var dX, dY, xDepth, yDepth;
+			//the basic principal is that otherShape should be ejected in either one
+			//of the directions it is moving or one one the directions this Shape is moving
+
+			//determine otherShape's movement vector from this Shape's POV)
+			dX = dXOther - dXThis;
+			dY = dYOther - dYThis;
+		
+			//determine the depth of penetration for relevant directions 
+			if (dY > 0) {		//moving down
+				yDepth = this.getTop() - other.getBottom();
+			} else if (dY < 0) {//moving up
+				yDepth = this.getBottom() - other.getTop();
+			}
+				
+			if (dX > 0) {		//moving right
+				xDepth = this.getLeft() - other.getRight();
+			} else if (dx < 0) {//moving left
+				xDepth = this.getRight() - other.getLeft();
+			}
+			
+			//if moving diagonally, the direction of ejection
+			//is the one with the smallest depth of penetration
+			if ((dX !== 0) && (dY !== 0)) {
+				if (xDepth > yDepth) {
+					return {x:0, y:yDepth};
+				} else {
+					return {x:xDepth, y:0};
+				}
+			} else {
+				return {x:xDepth||0, y:yDepth||0} 
 			}
 		}
 	});
@@ -1446,7 +1494,20 @@ INPUT = (function () {
 		type: 'box',
 		
 		height: 0,
-		width: 0
+		width: 0,
+		
+		getTop: function () {
+			return this.getY()-(this.height/2);
+		},
+		getBottom: function () {
+			return this.getY()+(this.height/2);
+		},
+		getLeft: function () {
+			return this.getX()-(this.width/2);
+		},
+		getRight: function () {
+			return this.getX()+(this.width/2);
+		}
 	});
 	
 	Circle = makeClass(Shape, function(spec) {
