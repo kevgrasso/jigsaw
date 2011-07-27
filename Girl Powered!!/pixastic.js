@@ -3,8 +3,8 @@
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * License: [http://www.pixastic.com/lib/license.txt]
  */
-
 //TODO: get rid of unused functions and minimize in final
+
 var Pixastic = (function() {
 
 

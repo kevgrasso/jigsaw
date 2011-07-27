@@ -2,21 +2,18 @@
 //Kevin Grasso
 
 //for rewrite:
-//--get rid of unnessessary upvars in collision
-//--put intersection test into shapes
-//--shape has ejection fuction
-//--setup VIEWPORT properly
-//--remove FRAGMENT
 //split jsgame into multiple files
-//finish Map functions
+//debug
 
 //buffered input
 //buckets with timers and triggers with expiration times
+//finish Map functions
 
 //---later---
 //
-//ACTOR:
+//ENTITY:
 //any other changes to the moveQueue system (have map in mind)
+//multi-cell entities
 //
 //INPUT:
 //mouse
@@ -46,9 +43,6 @@
 //ENEMIES:
 //
 //ANIMATION:
-//
-
-//---later---
 //
 //ACTOR:
 //actors larger than cells
