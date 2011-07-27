@@ -1,62 +1,6 @@
 //JIGSAW HTML5 GAME LIBRARY
 //Most code by Kevin Grasso
-//special thanks to: Douglas Crockford, Kevin Roast, Paul Koch, and Marijn Haverbeke
-
-//IMPORTANT:
-//!!add collision functions
-//!!add viewport functions
-//!!add input functions
-//add mouse support
-//implement animation
-//
-//KNOWN ISSUES:
-//test won't register collision if y ~= 255
-//
-//other:
-//add jsonReplace
-//!!change the name of the actor attribute in sprites and shapes to reflect that they can belong to any object
-//!!could we maintain a continuous heap of sprites to print instead of making a new one each cycle?
-//Matrix2 class
-//segmented layers/grids (like Pokemon, Mother 2, or Super Mario World) (define deletion point)
-//multiresolution grid (large objects register to lower resolution grid)
-//
-//input:
-//!!add downkey (delay keypress-length reset until after keyup/keydown)
-//!!add metalayers
-//!!add loadkeyset (with fragment system and inputoff)
-//!!add streamon/streamoff
-//!!add eventson/eventsoff
-//add frames, lowUp, lowDown, doubleTap
-
-//collisions:
-//!!getCollisions(shapearray, pool) returns array of collisions
-//getNumCollisions(num, shapeArray, pool) returns array of collisions, aborts after num-th collison is found
-//isCollision(shapearray, pool) returns true or false, aborts after first collision is found
-//custom collisions (rays and grids and such)
-//
-//done:
-//!!change rendering system
-//!!consolidate VIEWPORT's sprites and layers into a single structure
-//
-//!!implement fragments (ensure no namespace conflicts, loading counter)
-//!!implement collision (box, circle, poly, grid, line, point)
-//!!implement actors (lastAngle, orientation?)
-//!!implement layers (images, tiles, and properties)
-//!!implement maps
-//implement animation (linked lists)
-//!!implement rendering (lower y first)
-//
-//!!sprlayers
-//drawshapes?
-//!!funclayers
-//!!add frametimers
-//!!change shape pools to use objects? that might be stupid (yes it is)
-//!!sprites grouped by layer
-//!!should we put the actorgrid closer to the root? how?
-//
-
 "use strict";
-
 var COLLISION, DATA, EVENT, JigClass, getid, inherit, FRAGMENT, INPUT, MAP, MATERIALS, SOUND, VIEWPORT;
 
 // class/object functions
@@ -96,6 +40,44 @@ JigClass.prototype = {
 		return makeClass(this, subc, attributes);
 	}
 };
+
+
+//TODO: allow hard refresh of scripts to be dynamically loaded
+function include (filename, callback) {
+	var head = document.getElementsByTagName('head')[0],
+		e = document.createElement('script'),
+		targets = this.targets
+		obj = { };
+	e.type = 'text/javascript';
+	e.charset = 'utf-8';
+	
+	//setup target object
+	if (!targets[filename] ) {
+		targets[filename] = [];
+	}
+	targets[filename].push(obj);
+	
+	//all browers should call this when script is finished
+	e.onload = e.onreadystatechange = function () {
+	    if (!this.readyState || this.readyState == "loaded" || this.readyState == "complete") {
+	        //cleanup
+	        e.onload = e.onreadystatechange = null; // Plug IE memory leak-- even there in IE9!
+	        if (targets[filename].length === 0) {
+	        	delete this.targets[filename];
+	        }
+	        head.removeChild(e);
+	        
+	        if (callback) {
+	        	callback(obj, filename);
+	        }
+	    }
+	};
+	
+	//finish loading script
+	e.src = filename;
+	head.appendChild(e);
+}
+include.targets = { };
 
 
 function getSurface(w, h) {
@@ -1609,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	//register step-flow events
     EVENT.addEvent('step');
     
-    FRAGMENT.load('boot');
+    include('boot.js');
     (function step() {
         var pauseTime;	//time to wait for next frame
         

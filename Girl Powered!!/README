@@ -1,9 +1,16 @@
 GIRL POWERED!! BY KEVIN GRASSO
 A Javascript platformer for HTML5 Canvas.
 
+Requires:
+HTML canvas
+native JSON
+a script load event
+HTML audio
+localStorage?
+
 Recomended browsers:
-Google Chrome ?
-Mozilla Firefox ?
+Google Chrome 4+
+Mozilla Firefox 4+
 Safari ?
 Opera ?
 Internet Explorer 9+

@@ -1,12 +1,22 @@
 //Jigsaw test
 //Kevin Grasso
 
-//EVENT:
-//!!simplify to bucket/priority system
+//for rewrite:
+//--get rid of unnessessary upvars in collision
+//--put intersection test into shapes
+//--shape has ejection fuction
+//--setup VIEWPORT properly
+//--remove FRAGMENT
+//split jsgame into multiple files
+//finish Map functions
+
+//buffered input
+//buckets with timers and triggers with expiration times
+
+//---later---
 //
 //ACTOR:
 //any other changes to the moveQueue system (have map in mind)
-//combine shapes and sprites into attrib?
 //
 //INPUT:
 //mouse
@@ -27,7 +37,6 @@
 //MAPS:
 //MoveAlong (for walls too (for walljumps and grabbing ledges))
 //MoveAcross
-//load maps from json
 //
 //PLAYER:
 //balance characters better
@@ -39,21 +48,7 @@
 //ANIMATION:
 //
 
-//for rewrite:
-//--get rid of unnessessary upvars in collision
-//--put intersection test into shapes
-//--shape has ejection fuction
-//--setup VIEWPORT properly
-//remove FRAGMENT
-//triggers with expiration times
-//split jsgame into multiple files
-//finish Map functions
-
-//buffered input
-
 //---later---
-//VIEWPORT:
-//--replace heap with more efficent one
 //
 //ACTOR:
 //actors larger than cells
@@ -84,8 +79,7 @@ VIEWPORT.setFrameLength(50);
 INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 'left', 40: 'down', 65: 'a', 87: 'w', 83: 's', 68: 'd', 32: 'space'});
 
 (function () {
-	var jig = DATA.jigsaw,
-		that = DATA.boot,
+	var that = include.targets['boot.js'].pull(),
 		player, bgcolor, debug,
 		test, mapDisplay,
 		solids;
@@ -493,8 +487,25 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		entities: null,  //crumble hurt switch onblock offblock convey door spring
 		attrib: null, //if block or empty has string or image, print it
 		
-		makeShape: function () {
+		moveLeft: function () {
+			
+			if (tcell.type === uphill) { //if moving uphill
+				//target cell is above and left/right of current cell
+				tcell = tcell.getRelCell(dir, -1);
+			} else {
+				//destination cell is left/right of current cell
+				tcell = tcell.getRelCell(dir, 0); 
+			}
+			
+			if (tcell.getRelCell(0, 1).type === downhill) {  //if moving downhill
+				//destination cell is below current cell, make that the target cell instead
+				tcell = tcell.getRelCell(0, 1);
+			}
+			
+		},
 		
+		moveRight: function () {
+			
 		},
 		
 		isBlocking: function (x, y, isBottom) {
