@@ -46,6 +46,9 @@
 //--setup VIEWPORT properly
 //remove FRAGMENT
 //triggers with expiration times
+//split jsgame into multiple files
+//finish Map functions
+
 //buffered input
 
 //---later---
