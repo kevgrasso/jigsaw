@@ -21,3 +21,152 @@ Proto1:
 *event, input, collision, viewport, actor, and map systems under construction
 *basic player physics 
 *using pixastic library 
+
+mapDisplay = new Layer({ //you're going to have to make it a class
+		
+		draw: function (c, viewX, viewY, count) {
+			var i, j, tile, 
+				printList = [ ],
+				map = this.map;
+			
+			for (i = 0; i < map.gridw/map.cellw; i += 1) {
+				c.save();
+				for (j = 0; j < map.gridh/map.cellh; j += 1) {
+					tile = this.tileSet[map[i][j].image];
+					switch(typeof tile) {
+					case 'object':
+						c.drawImage(tile, 0, 0);
+						break;
+					case 'function':
+						tile(c, viewX, viewY, count, i, j);
+						break;
+					}
+					
+					if (map[i][j].print) {
+						printList.push(map[i][j].print);
+					}
+					c.translate(0, map.cellh);
+				}
+				c.restore();
+				
+				c.translate(map.cellw, 0);
+			}
+			
+		}
+	});
+	
+	that.Tile = {//lookups
+		type: null, 	 //lslope rslope block ledge empty breakable tempbreak
+		entities: null,  //crumble hurt switch onblock offblock convey door spring
+		attrib: null, //if block or empty has string or image, print it
+		
+		moveLeft: function () {
+			
+			if (tcell.type === uphill) { //if moving uphill
+				//target cell is above and left/right of current cell
+				tcell = tcell.getRelCell(dir, -1);
+			} else {
+				//destination cell is left/right of current cell
+				tcell = tcell.getRelCell(dir, 0); 
+			}
+			
+			if (tcell.getRelCell(0, 1).type === downhill) {  //if moving downhill
+				//destination cell is below current cell, make that the target cell instead
+				tcell = tcell.getRelCell(0, 1);
+			}
+			
+		},
+		
+		moveRight: function () {
+			
+		},
+		
+		isBlocking: function (x, y, isBottom) {
+			x = x || 0;
+			y = y || 0;
+			
+			switch (this.type) {
+			case 'block':
+			case 'breakable':
+			case 'tempbreak':
+			case 'hurt':
+			case 'convey':
+			case 'spring':
+				return true; //always blocks
+			case 'empty':
+			case 'door':
+				return false; //never blocks
+				
+			case 'ledge':
+				return y > 0; //blocks from above
+			case 'onblock':
+				return this.attrib.attrib; //blocks if on
+			case 'offblock':
+				return !this.attrib.attrib; //blocks if off
+				
+			case 'lslope':
+				return isBottom || y > 0 || x < 0;
+			case 'rslope':
+				return isBottom || y > 0 || x > 0;
+			
+			}
+		}
+	};
+	
+	that.Map = { //fix type
+		moveAlong: function (x, y, dx, shape) {
+			var startcell = this.getcell(x, y), // initial cell
+				
+				tcell = startcell, //target cell, start calculations at initial cell
+				tx = x + dx, ry, //target x pos
+				dir = (dx !== 0) && Math.abs(dx) / dx || 0, //direction of movement: -1 = left, 1 = right
+				
+				uphill = dir === -1 ? 'rslope' : 'lslope',
+				downhill = dir === -1 ? 'lslope' : 'rslope';
+				
+			shape = shape.getBox();
+			
+			//if moving between cells
+			while (this.getcx(rx) != tcell.x) { 
+				
+				if (tcell.type === uphill) { //if moving uphill
+					//target cell is above and left/right of current cell
+					tcell = tcell.getRelCell(dir, -1);
+				} else {
+					//destination cell is left/right of current cell
+					tcell = tcell.getRelCell(dir, 0); 
+				}
+				
+				if (tcell.getRelCell(0, 1).type === downhill) {  //if moving downhill
+					//destination cell is below current cell, make that the target cell instead
+					tcell = tcell.getRelCell(0, 1);
+				}
+			}
+			
+			while (true) {
+				//determine target y pos (move into Tile)
+				if (tcell.type === 'lslope') {
+					y = this.cellh/this.cellw * (tcell.x1-tx);
+				} else if (tcell.type === 'rslope') {
+					y = this.cellh/this.cellw * (tx-tcell.x2);
+				} else {
+					//set target y to bottom of target cell (assume there's ground for now)
+					ty = tcell.y2;
+				}
+			
+			//future entity+tile collision goes here! if collision, recalculate y pos
+			
+			}
+			
+			return {
+				x: rx,
+				y: ry,
+				wall: null,
+				floor: null
+			};
+		},
+		moveThrough: function (x, y, dx, dy) {
+			
+			
+		}
+	};
