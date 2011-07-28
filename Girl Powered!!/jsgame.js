@@ -1,7 +1,9 @@
 //JIGSAW HTML5 GAME LIBRARY
 //Most code by Kevin Grasso
 "use strict";
-var COLLISION, DATA, EVENT, JigClass, getid, inherit, FRAGMENT, INPUT, MAP, MATERIALS, SOUND, VIEWPORT;
+var COLLISION, DATA, TRIGGER, JigClass, getid, inherit, FRAGMENT, INPUT, MAP, MATERIALS, SOUND, VIEWPORT,
+	Coord, LinkNode, BinaryHeap, Matrix2, Layer, MetaLayer, Sprite, Cell, Grid, Actor, CollisionCell, CollisionGrid,
+	Shape, Box, Circle, Line, Point;
 
 // class/object functions
 function extend(target, src) {
@@ -46,7 +48,7 @@ JigClass.prototype = {
 function include (filename, callback) {
 	var head = document.getElementsByTagName('head')[0],
 		e = document.createElement('script'),
-		targets = this.targets
+		targets = include.targets,
 		obj = { };
 	e.type = 'text/javascript';
 	e.charset = 'utf-8';
@@ -63,7 +65,7 @@ function include (filename, callback) {
 	        //cleanup
 	        e.onload = e.onreadystatechange = null; // Plug IE memory leak-- even there in IE9!
 	        if (targets[filename].length === 0) {
-	        	delete this.targets[filename];
+	        	delete targets[filename];
 	        }
 	        head.removeChild(e);
 	        
@@ -91,7 +93,8 @@ function getSurface(w, h) {
 
 //Object prototype functions
 (function () {
-    var proto = Object.prototype;
+    var proto = Object.prototype,
+    	lastid;
     
     proto.create = function (spec) {
         function Superc() { }
@@ -107,10 +110,9 @@ function getSurface(w, h) {
 	proto.extend = function(src) {
 		return extend(this, src);
 	};
-    
-    proto.objectId = null;
+
     lastid = 0;
-	
+    proto.objectId = null;
     proto.getid = function () {
 		
         if (!this.hasOwnProperty('objectId')) {
@@ -149,7 +151,7 @@ TRIGGER = (function () {
     
     return {
         addTrigger: function (trigger) {
-            triggerlist[trigger] = BinaryHeap('priority');
+            triggerlist[trigger] = new BinaryHeap('priority');
 			return;
         },
         removeTrigger: function (trig) {
@@ -200,8 +202,8 @@ TRIGGER = (function () {
         fireTrigger: function(trigger) {
             var i, j, args = Array.prototype.slice.call(arguments, 1);
 			
-			trigger.save();
-			for (i = renderlist.pop(); i; i = renderlist.pop) {
+			triggerlist[trigger].save();
+			for (i = triggerlist[trigger].pop(); i; i = triggerlist[trigger].pop) {
 				for (j in i.buckets) {
 				
 					if (i.buckets.hasOwnProperty(j) && this.bucketstate[j]) {
@@ -211,7 +213,7 @@ TRIGGER = (function () {
 				
 				}
 			}
-			trigger.restore();
+			triggerlist[trigger].restore();
 						
 			return;
 		}
@@ -234,13 +236,13 @@ INPUT = (function () {
 		if (!this.state[keyname]) {
 			this.state[keyname] = true;
 			
-			TRIGGER.fire(keyname+'Down');
+			TRIGGER.fireTrigger(keyname+'Down');
 			this.keydown[keyname] = Time().getTime(); //TODO: double tap
 		}
 		if (boolStream) {
 			keystream.unshift(keycode);
-			if (boolEvent) {
-				TRIGGER.fireEvent('keystroke', keystream);
+			if (boolTrigger) {
+				TRIGGER.fireTrigger('keystroke', keystream);
 			}
 		}
 		this.lastkey = keycode;
@@ -253,7 +255,7 @@ INPUT = (function () {
 		if (this.state[keyname]) {
 			this.state[keyname] = false;
 			
-			TRIGGER.fire(keyname+'Down');
+			TRIGGER.fireTrigger(keyname+'Down');
 			this.keyup[keyname] = Time().getTime();
 		}
 	}
@@ -288,8 +290,8 @@ INPUT = (function () {
 					this.keyup[keyname] = 0;
 					this.keydown[keyname] = 0;
 					
-					TRIGGER.addEvent(keyname+'Down');
-					TRIGGER.addEvent(keyname+'Up');
+					TRIGGER.addTrigger(keyname+'Down');
+					TRIGGER.addTrigger(keyname+'Up');
 				}
 			}
 
@@ -301,8 +303,8 @@ INPUT = (function () {
 					delete this.keyup[keyname];
 					delete this.keydown[keyname];
 					
-					TRIGGER.removeEvent(keyname+'Down');
-					TRIGGER.removeEvent(keyname+'Up');
+					TRIGGER.removeTrigger(keyname+'Down');
+					TRIGGER.removeTrigger(keyname+'Up');
 				}
 			}
 			
@@ -347,7 +349,7 @@ INPUT = (function () {
 		}
 	});
 	
-	Node = makeClass(null, function (data, next, prev) {
+	LinkNode = makeClass(null, function (data, next, prev) {
 		this.data = data;
 		
 		if (next) {
@@ -379,7 +381,13 @@ INPUT = (function () {
 	BinaryHeap = makeClass(null, function (scoreName, content){ // this class written by Marijn Haverbeke:
 		this.content = content || [];							// http://eloquentjavascript.net/appendix2.html
 		this.scoreName = scoreName;
+		
+		this.history = [];
 	}, {
+		content: null,
+		scoreName: null,
+		history: null,
+		
 		push: function(element) {
 			// Add the new element to the end of the array.
 			this.content.push(element);
@@ -497,11 +505,11 @@ INPUT = (function () {
 		
 		//store and restore the current heap state ala HTML Canvas
 		save: function () {
-			history.push(this.content.splice(0));
+			this.history.push(this.content.splice(0));
 		},
 		
 		restore: function () {
-			content = history.pop();
+			this.content = this.history.pop();
 		}
 	});
 
@@ -610,7 +618,9 @@ INPUT = (function () {
 (function () {
 	//images+layers+sprites
 	Layer = makeClass(null, function (spec) {
-		extend(this, spec.extend);
+		if (spec.extend) {
+			extend(this, spec.extend);
+		}
 		// TODO: for (x in this.prototype) { spec[x] = this[x]; } ??? (filter)
 		
 		this.draw = spec.draw;
@@ -638,8 +648,8 @@ INPUT = (function () {
 		draw: null
 	});
 
-	jig.MetaLayer = makeClass(jig.Layer, function (spec) {
-		jig.Layer.call(this, spec);
+	MetaLayer = makeClass(Layer, function (spec) {
+		Layer.call(this, spec);
 		
 		this.x = spec.x;
 		this.y = spec.y;
@@ -653,12 +663,12 @@ INPUT = (function () {
 		this.draw = spec.draw || null;
 		this.context = spec.context || getSurface(this.width, this.height);
 		
+		this.images = new BinaryHeap('z');
+		this.imglist = { };
+
 		if (spec.images) {
 			setImages(spec.images);
 		}
-		
-		this.images = BinaryHeap('z');
-		this.imglist = { };
 		
 	}, {
 	x: 0,
@@ -727,8 +737,8 @@ INPUT = (function () {
 		
 	});
 	
-	Sprite = makeClass(jig.Layer, function (spec) {
-		jig.Layer.call(this, spec);
+	Sprite = makeClass(Layer, function (spec) {
+		Layer.call(this, spec);
 		
 		this.parent = spec.parent;
 		this.z = spec.z;
@@ -755,10 +765,10 @@ INPUT = (function () {
 		this.cx = cx;
 		this.cy = cy;
 		
-		this.x1 = x*this.grid.cellw;
-		this.y1 = y*this.grid.cellh;
-		this.x2 = x*(this.grid.cellw+1);
-		this.y2 = y*(this.grid.cellh+1);
+		this.x1 = cx*this.grid.cellw;
+		this.y1 = cy*this.grid.cellh;
+		this.x2 = cx*(this.grid.cellw+1);
+		this.y2 = cy*(this.grid.cellh+1);
 	}, {
 		grid: null,
 		
@@ -846,7 +856,7 @@ INPUT = (function () {
 			for (i in spec.sprites) {
 				if (spec.sprites.hasOwnProperty(i)) {
 					spec.sprites[i].parent = this;
-					this.sprites[i] = new DATA.jigsaw.Sprite(spec.sprites[i]);
+					this.sprites[i] = new Sprite(spec.sprites[i]);
 				}
 			}
 		}
@@ -855,7 +865,7 @@ INPUT = (function () {
 			for (i in spec.shapes) {
 				if (spec.shapes.hasOwnProperty(i)) {
 					spec.shapes[i].parent = this;
-					this.shapes[i] = new DATA.jigsaw.Shape(spec.shapes[i]);
+					this.shapes[i] = new Shape(spec.shapes[i]);
 				}
 			}
 		}
@@ -1192,7 +1202,7 @@ INPUT = (function () {
 						node = this.shapelist[id];
 						node.num += 1;
 					} else {
-						node = new DATA.jigsaw.Node(shape, this.shapes[pool]);
+						node = new LinkNode(shape, this.shapes[pool]);
 						node.num = 1;
 						
 						this.shapes[pool] = node;
@@ -1539,22 +1549,9 @@ INPUT = (function () {
 		};
 	}, {type: 'point'});
 }());
-
-VIEWPORT = new MetaLayer();
-//		this.x = spec.x;
-//		this.y = spec.y;
-		
-//		this.viewx = spec.viewx;
-//		this.viewy = spec.viewy;
-		
-//		this.height = spec.height;
-//		this.width = spec.width;
-		
-//		this.draw = spec.draw || null;
-//		this.context = spec.context || getSurface(this.width, this.height);
     
 document.addEventListener('DOMContentLoaded', function () {
-	var frameTimer = Date().getTime(); //keep track of when frames should execute
+	var frameTimer = (new Date()).getTime(); //keep track of when frames should execute
 	
     //setup canvas
 	VIEWPORT = new MetaLayer({
@@ -1575,32 +1572,32 @@ document.addEventListener('DOMContentLoaded', function () {
 			frameLength: 0,
 			fps: 0,
 			
-			setFrames: function (value) {
-				if (value >= 1) {
-					this.fps = value;
-					this.frameLength = 1/value;
-				} else {
-					this.frameLength = value;
-					this.fps = 1/value;
-				}
+			setFramePerSecond: function (num) {
+				this.fps = num;
+				this.frameLength = 1000/num;
+			},
+			
+			setFrameLength: function (num) {
+				this.fps = 1000/num;
+				this.frameLength = num;
 			}
                         
 		}
 	});
     
 	//register step-flow events
-    EVENT.addEvent('step');
+    TRIGGER.addTrigger('step');
     
     include('boot.js');
     (function step() {
         var pauseTime;	//time to wait for next frame
         
-        EVENT.fireEvent('step', null); //signal primary step code
+        TRIGGER.fireTrigger('step'); //signal primary step code
         
         VIEWPORT.render();
         
 		frameTimer += VIEWPORT.frameLength;
-		pauseTime = frameTimer - Date().getTime();
+		pauseTime = frameTimer - (new Date()).getTime();
         setTimeout(step, pauseTime <= 1 ? 1 : pauseTime);
     }());
 }, true); //TODO: is true/stopImmediatePropagation faster?

@@ -3,10 +3,13 @@
 
 //for rewrite:
 //split jsgame into multiple files
+//cleanup shapes/fix ejectShape
+//cleanup sprite (SpriteLayer)
+//cleanup boot
 //debug
 
 //buffered input
-//buckets with timers and triggers with expiration times
+//buckets with timers and triggers with expiration times (clear + clearAll functions)
 //finish Map functions
 
 //---later---
@@ -73,18 +76,18 @@ VIEWPORT.setFrameLength(50);
 INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 'left', 40: 'down', 65: 'a', 87: 'w', 83: 's', 68: 'd', 32: 'space'});
 
 (function () {
-	var that = include.targets['boot.js'].pull(),
+	var that = include.targets['boot.js'].pop(),
 		player, bgcolor, debug,
 		test, mapDisplay,
 		solids;
 	
-	bgcolor = new jig.Layer({draw:function (c) {
+	bgcolor = new Layer({draw:function (c) {
 		c.fillStyle = 'black';
 		c.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
 	}, z:-1 });
 	bgcolor.activate();
 	
-	debug = new jig.Layer({draw:function (c) {
+	debug = new Layer({draw:function (c) {
 		
 		c.fillStyle = 'white';
 		c.font = '12pt Arial';
@@ -106,9 +109,9 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 	}, z:100 });
 	debug.activate();
 	
-	grid = new jig.Grid(740, 500, 120, 125);
+	grid = new Grid(740, 500, 120, 125);
 	
-	player = new jig.Actor({
+	player = new Actor({
 		x: 400,
 		y: 330,
 		z: 1,
@@ -413,7 +416,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 	};
 	EVENT.subscribe('step', 'global', player, player.step);
 	
-	test = new DATA.jigsaw.Actor({
+	test = new Actor({
 		x: 150,
 		y: 160,
 		
