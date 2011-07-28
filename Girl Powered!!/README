@@ -4,7 +4,7 @@ A Javascript platformer for HTML5 Canvas.
 Requires:
 HTML canvas
 native JSON
-a script load event
+a script loaded event
 HTML audio
 localStorage?
 
