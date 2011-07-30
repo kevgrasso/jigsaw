@@ -68,10 +68,11 @@ function include (filename, callback) {
 	        }
 	    }
 	};
-	
 	//finish loading script
 	e.src = filename;
 	head.appendChild(e);
+	
+	return obj;
 }
 include.targets = { };
 
@@ -612,12 +613,11 @@ INPUT = (function () {
 (function () {
 	//images+layers+sprites
 	Layer = makeClass(function (spec) {
-		if (spec.extend) {
-			extend(this, spec.extend);
-		}
-		
 		this.draw = spec.draw;
 		this.z = spec.z;
+		if (spec.attrib) {
+			extend(this, spec.attrib);
+		}
 		
 		if (spec.viewport) {
 			this.activate(spec.viewport)
@@ -889,7 +889,9 @@ INPUT = (function () {
 		this.bottom = spec.bottom || 0;
 		this.left = spec.left || 0;
 		this.right = spec.right || 0;
-		this.extend(spec.extend);
+		if (spec.attrib) {
+			this.extend(spec.attrib);
+		}
 		
 		this.dimAdjust();
 	}, {
@@ -1564,7 +1566,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		draw: MetaLayer.render,
 		context: document.getElementById('display').getContext('2d'),
 		
-		extend: {
+		attrib: {
 			startTime: frameTimer,
 			frameLength: 0,
 			frameRate: 0,
@@ -1585,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	//register step-flow events
     TRIGGER.addTrigger('step');
     
-    include('boot.js');
+    VIEWPORT.boot = include('boot.js');
     (function step() {
         var pauseTime;	//time to wait for next frame
         

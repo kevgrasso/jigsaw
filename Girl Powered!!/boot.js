@@ -288,7 +288,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		} else if (INPUT.state[3]) {
 			this.id = 'megan';
 		}
-		stats = that.stats[this.id];
+		stats = this.stats[this.id];
 		
 		if (INPUT.state.up || INPUT.state.w) {
 			if ((INPUT.keydown.up <= 3 || INPUT.keydown.w <= 3) && !this.airborne) {
