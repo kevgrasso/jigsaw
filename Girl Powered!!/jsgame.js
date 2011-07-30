@@ -39,13 +39,14 @@ function makeClass(subc, attributes, superc) {
 }
 
 //TODO: allow hard refresh of scripts to be dynamically loaded
-function include (filename, callback) {
+function include (filename, callback, bAsync) {
 	var head = document.head,
 		e = document.createElement('script'),
 		targets = include.targets,
 		obj = { };
 	e.type = 'application/javascript';
 	e.charset = 'utf-8';
+	e.async = bAsync || true;
 	
 	//setup target object
 	if (!targets[filename] ) {
@@ -902,8 +903,8 @@ INPUT = (function () {
 		x: 0,
 		y: 0,
 		
-		lastx: 0,
-		lasty: 0,
+		relx: 0,
+		rely: 0,
 		angle: 0,
 		dist: 0,
 		
@@ -1021,8 +1022,8 @@ INPUT = (function () {
 					bufy = Math.sin(i.angle)*i.dist;
 				}
 			}
-			value.lastx = bufx;
-			value.lasty = bufy;
+			value.relx = bufx;
+			value.rely = bufy;
 			value.angle = Math.atan(bufy/bufx) || this.angle;
 			value.dist = Math.sqrt(Math.pow(bufx, 2) + Math.pow(bufy, 2));
 			
@@ -1036,8 +1037,8 @@ INPUT = (function () {
 		move: function () {
 			var data = this.getMove(true);
 			
-			this.x = this.x + data.relx;
-			this.y = this.y + data.rely;
+			this.x += data.relx;
+			this.y += data.rely;
 			this.extend(data);
 			
 			return this.dimAdjust();
@@ -1380,25 +1381,25 @@ INPUT = (function () {
 		
 		switch (shape.type) {
 		case 'box':
-			value.top    = yOffset + shape.rely;
-			value.bottom = yOffset + shape.rely + shape.height;
-			value.left   = xOffset + shape.relx;
-			value.right  = xOffset + shape.relx + shape.width;
+			value.top    = yOffset + shape.y;
+			value.bottom = yOffset + shape.y + shape.height;
+			value.left   = xOffset + shape.x;
+			value.right  = xOffset + shape.x + shape.width;
 			break;
 		case 'circle':
-			value.x      = xOffset + shape.relx;
-			value.y      = yOffset + shape.rely;
+			value.x      = xOffset + shape.x;
+			value.y      = yOffset + shape.y;
 			value.radius = shape.radius;
 			break;
 		case 'line':
-			value.x1 	 = xOffset + shape.relx;
-			value.y1 	 = yOffset + shape.rely;
+			value.x1 	 = xOffset + shape.x;
+			value.y1 	 = yOffset + shape.y;
 			value.x2 	 = xOffset + shape.endx;
 			value.y2 	 = yOffset + shape.endy;
 			break;
 		case 'point':
-			value.x  	 = xOffset + shape.relx;
-			value.y 	 = yOffset + shape.rely;
+			value.x  	 = xOffset + shape.x;
+			value.y 	 = yOffset + shape.y;
 			break;
 		}
 		
@@ -1505,8 +1506,8 @@ INPUT = (function () {
 		Shape.call(this, spec);
 		this.boundaryBox = new Box({ 
 			pool: this.pool,
-			relx: this.relx,
-			rely: this.rely,
+			x: this.relx,
+			y: this.rely,
 			height: this.radius,
 			width: this.radius
 		});
@@ -1522,8 +1523,8 @@ INPUT = (function () {
 		Shape.call(this, spec);
 		this.boundaryBox = {
 			pool: this.pool,
-			relx: (this.relx+endx)/2,
-			rely: (this.rely+endy)/2,
+			x: (this.x+endx)/2,
+			y: (this.y+endy)/2,
 			height: Math.abs(endx),
 			width: Math.abs(endy)
 		};
@@ -1541,8 +1542,8 @@ INPUT = (function () {
 		Shape.call(this, spec);
 		this.boundaryBox = {
 			pool: this.pool,
-			relx: this.relx,
-			rely: this.rely,
+			x: this.x,
+			y: this.y,
 			height: 0,
 			width: 0
 		};

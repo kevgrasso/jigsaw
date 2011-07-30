@@ -5,6 +5,7 @@
 //split jsgame into multiple files
 //debug
 
+//change everything back to framecounts
 //cleanup shapes/fix ejectShape
 //cleanup sprite (SpriteLayer)
 //cleanup boot
@@ -90,8 +91,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 	bgcolor = new Layer({draw:function (c) {
 		c.fillStyle = 'black';
 		c.fillRect(0, 0, VIEWPORT.width, VIEWPORT.height);
-	}, z:-1 });
-	bgcolor.activate();
+	}, viewport: VIEWPORT, z:-1 });
 	
 	debug = new Layer({draw:function (c) {
 		
@@ -112,16 +112,15 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 			c.fillText('collision', 600, 20);
 		}
 		
-	}, z:100 });
-	debug.activate();
+	}, viewport: VIEWPORT, z:100 });
 	
 	grid = new CollisionGrid(740, 500, 120, 125);
 	
 	player = new Actor({
+		grid: grid,
 		x: 400,
 		y: 330,
 		z: 1,
-		grid: grid,
 		
 		top: -140,
 		bottom: 0,
@@ -129,20 +128,21 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		right: 20,
 		
 		sprites:{ square: {
-			relx: -20,
-			rely: -80,
+			x: -20,
+			y: -80,
+			viewport: VIEWPORT,
 			draw: function (c, viewX, viewY, count) {
 				c.translate(this.parent.x, this.parent.y);
 				c.fillStyle = 'white';
-				c.fillRect(this.relx, this.rely, 30, 80);
+				c.fillRect(this.x, this.y, 30, 80);
 			}
 		} },
 		
 		shapes:{ bulk: {
 			type: 'box',
 			pool: 'global',
-			relx: -20,
-			rely: -150,
+			x: -20,
+			y: -150,
 			width: 40,
 			height: 150
 		} }
@@ -428,19 +428,20 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		grid: grid,
 		
 		sprites: { square: {
-			relx: -6,
-			rely: -40,
+			x: -6,
+			y: -40,
+			viewport: VIEWPORT,
 			draw: function (c, viewX, viewY, count) {
 				c.translate(this.parent.x, this.parent.y);
 				c.fillStyle = 'white';
-				c.fillRect(this.relx, this.rely, 40, 12);
+				c.fillRect(this.x, this.y, 40, 12);
 			}
 		} },
 		shapes:{ wall: {
 			type: 'box',
 			pool: 'global',
-			relx: -50,
-			rely: -10,
+			x: -50,
+			y: -10,
 			width: 100,
 			height: 20
 		} },
