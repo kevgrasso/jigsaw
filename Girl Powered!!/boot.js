@@ -3,14 +3,19 @@
 
 //for rewrite:
 //split jsgame into multiple files
+//debug
+
 //cleanup shapes/fix ejectShape
 //cleanup sprite (SpriteLayer)
 //cleanup boot
-//debug
-
-//buffered input
+//get rid of makeClass-- generic Object.prototype.isA function instead
+//use DOM events for readystate in Include
+//attach input and display to triggers 
 //buckets with timers and triggers with expiration times (clear + clearAll functions)
 //finish Map functions
+//INPUT.updateMouse(): checks given CollisionGrid, either pushes SelfShape/MouseShape into Heap or checks out subgrid/viewport containing. BinaryHeap is made a
+//	attribute of INPUT. mouse events bubble down array until false is returned. do something about moveover/out.
+//	TRIGGER.subscribe(Shape.getTrigger('dblclick')); (based on ID)
 
 //---later---
 //
@@ -56,7 +61,8 @@
 //
 //OTHER:
 //matrix2d class
-//pause on Window losing focus
+//pause on Window losing focus (throttle framerate to 2fps or lower)
+//playing same file multiple times
 
 //BUGS:
 //sprite's isViewable function not working //it shouldn't
@@ -72,14 +78,14 @@
 //
 //combos have minor effect on damage, major effect on pickups
 
-VIEWPORT.setFrameLength(50);
+VIEWPORT.setFrameLength(1000);
 INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 'left', 40: 'down', 65: 'a', 87: 'w', 83: 's', 68: 'd', 32: 'space'});
 
 (function () {
 	var that = include.targets['boot.js'].pop(),
 		player, bgcolor, debug,
 		test, mapDisplay,
-		solids;
+		solids, stats;
 	
 	bgcolor = new Layer({draw:function (c) {
 		c.fillStyle = 'black';
@@ -102,14 +108,14 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		c.fillText('xspeed:'+player.xspeed, 0, 60);
 		c.fillText('yspeed:'+player.yspeed, 0, 80);
 		
-		if (DATA.collide) {
+		if (that.collide) {
 			c.fillText('collision', 600, 20);
 		}
 		
 	}, z:100 });
 	debug.activate();
 	
-	grid = new Grid(740, 500, 120, 125);
+	grid = new CollisionGrid(740, 500, 120, 125);
 	
 	player = new Actor({
 		x: 400,
@@ -122,7 +128,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		left: -20,
 		right: 20,
 		
-		sprites:{ square: new Sprite ({
+		sprites:{ square: {
 			relx: -20,
 			rely: -80,
 			draw: function (c, viewX, viewY, count) {
@@ -130,10 +136,9 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 				c.fillStyle = 'white';
 				c.fillRect(this.relx, this.rely, 30, 80);
 			}
-			
-		})
-	},
-		shapes:{ bulk:{
+		} },
+		
+		shapes:{ bulk: {
 			type: 'box',
 			pool: 'global',
 			relx: -20,
@@ -148,7 +153,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 	player.yspeed = 0;
 	player.jumpState = 'walk';
 	player.dashState = 'ready';
-	DATA.stats = {
+	player.stats = {
 	//jess:
 	// speed med, but relatively faster run
 	// jump bit lower than megan, swing hook, umbrella (ride thermals)
@@ -274,7 +279,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		//xx.x pixels to stop?
 		//xx.x pixels to turn?
 		
-		DATA.collide = false;
+		that.collide = false;
 		
 		if (INPUT.state[1]) {
 			this.id = 'jess';
@@ -283,7 +288,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		} else if (INPUT.state[3]) {
 			this.id = 'megan';
 		}
-		stats = DATA.stats[this.id];
+		stats = that.stats[this.id];
 		
 		if (INPUT.state.up || INPUT.state.w) {
 			if ((INPUT.keydown.up <= 3 || INPUT.keydown.w <= 3) && !this.airborne) {
@@ -414,7 +419,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		return this.move();
 		
 	};
-	EVENT.subscribe('step', 'global', player, player.step);
+	TRIGGER.subscribe('step', player, player.step, 'global');
 	
 	test = new Actor({
 		x: 150,
@@ -438,15 +443,15 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 			rely: -10,
 			width: 100,
 			height: 20
-		} }
+		} },
 		
 	});
 	
-	COLLISION.addCollision(grid, 'global', 'global', function (a, b) {
-		DATA.collide = true;
+	grid.addCollision('global', 'global', function (a, b) {
+		that.collide = true;
 	});
 	
-	that.SCRIPT = {
+	that.DIALOG = {
 		
 	};
 	

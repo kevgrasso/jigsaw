@@ -5,6 +5,9 @@ var COLLISION, DATA, TRIGGER, JigClass, getid, inherit, FRAGMENT, INPUT, MAP, MA
 	Coord, LinkNode, BinaryHeap, Matrix2, Layer, MetaLayer, Sprite, Cell, Grid, Actor, CollisionCell, CollisionGrid,
 	Shape, Box, Circle, Line, Point;
 
+document.head = document.getElementsByTagName('head')[0]; //I'm not sure if this expands support any, but better safe than sorry
+														  //TODO: check if it does
+
 // class/object functions
 function extend(target, src) {
     var i;
@@ -17,9 +20,7 @@ function extend(target, src) {
     return target;
 }
 
-JigClass = function () { };
-
-function makeClass(superc, subc, attributes) {
+function makeClass(subc, attributes, superc) {
 	subc = subc || function () { superc.apply(this, arguments);	};
 	
     if (superc) {
@@ -37,20 +38,13 @@ function makeClass(superc, subc, attributes) {
     return subc;
 }
 
-JigClass.prototype = {
-	makeClass: function (subc, attributes) {
-		return makeClass(this, subc, attributes);
-	}
-};
-
-
 //TODO: allow hard refresh of scripts to be dynamically loaded
 function include (filename, callback) {
-	var head = document.getElementsByTagName('head')[0],
+	var head = document.head,
 		e = document.createElement('script'),
 		targets = include.targets,
 		obj = { };
-	e.type = 'text/javascript';
+	e.type = 'application/javascript';
 	e.charset = 'utf-8';
 	
 	//setup target object
@@ -59,7 +53,7 @@ function include (filename, callback) {
 	}
 	targets[filename].push(obj);
 	
-	//all browers should call this when script is finished
+	//all browsers should call this when script is finished
 	e.onload = e.onreadystatechange = function () {
 	    if (!this.readyState || this.readyState == "loaded" || this.readyState == "complete") {
 	        //cleanup
@@ -123,9 +117,9 @@ function getSurface(w, h) {
         return this.objectId;
     };
     
-    proto.makeClass = function (subc, overrides) {
-        return makeClass(this, subc, overrides);
-    };
+	proto.makeClass = function (subc, attributes) {
+		return makeClass(subc, attributes, this);
+	}
 	
 	proto.isEmpty = function () {
 		var i;
@@ -168,9 +162,9 @@ TRIGGER = (function () {
 			return;
         },
         
-        subscribe: function (obj, func, trigger) {
-            var id = obj.getid().toString() + '+' + func.getid().toString(),
-				i, buckets = Array.splice.call(arguments, 3),
+        subscribe: function (trigger, obj, func) {
+            var id = obj.getid() + '+' + func.getid(),
+				i, buckets = Array.prototype.slice.call(arguments, 3),
 				entry;
 			
             if (!objid[id]) {
@@ -191,7 +185,7 @@ TRIGGER = (function () {
 			
 			return entry;
         },											
-        unsubscribe: function (obj, func, trigger) {
+        unsubscribe: function (trigger, obj, func) {
             var id = obj.getid() + '+' + func.getid();
 			triggerlist[trigger].remove(objid[id]);
 			delete objid[id];
@@ -203,10 +197,10 @@ TRIGGER = (function () {
             var i, j, args = Array.prototype.slice.call(arguments, 1);
 			
 			triggerlist[trigger].save();
-			for (i = triggerlist[trigger].pop(); i; i = triggerlist[trigger].pop) {
+			for (i = triggerlist[trigger].pop(); i; i = triggerlist[trigger].pop()) {
 				for (j in i.buckets) {
 				
-					if (i.buckets.hasOwnProperty(j) && this.bucketstate[j]) {
+					if (i.buckets.hasOwnProperty(j) && bucketstate[j]) {
 						i.func.apply(i.obj, args);
 						break;
 					}
@@ -315,7 +309,7 @@ INPUT = (function () {
 
 (function () {    
 	//data types
-	Coord = makeClass(null, function (x, y) {
+	Coord = makeClass(function (x, y) {
 		this.x = x;
 		this.y = y;
 	}, {
@@ -349,7 +343,7 @@ INPUT = (function () {
 		}
 	});
 	
-	LinkNode = makeClass(null, function (data, next, prev) {
+	LinkNode = makeClass(function (data, next, prev) {
 		this.data = data;
 		
 		if (next) {
@@ -378,7 +372,7 @@ INPUT = (function () {
 		}
 	});
 
-	BinaryHeap = makeClass(null, function (scoreName, content){ // this class written by Marijn Haverbeke:
+	BinaryHeap = makeClass(function (scoreName, content){ // this class written by Marijn Haverbeke:
 		this.content = content || [];							// http://eloquentjavascript.net/appendix2.html
 		this.scoreName = scoreName;
 		
@@ -505,15 +499,15 @@ INPUT = (function () {
 		
 		//store and restore the current heap state ala HTML Canvas
 		save: function () {
-			this.history.push(this.content.splice(0));
+			this.history = this.content.slice(0);
 		},
 		
 		restore: function () {
-			this.content = this.history.pop();
+			this.content = this.history;
 		}
 	});
 
-	Matrix2 = makeClass(null, function(data) {
+	Matrix2 = makeClass(function(data) {
 		this.set(data);
 		if (arguments > 1) {
 			this.transform.apply(this, arguments.slice(1));
@@ -617,14 +611,17 @@ INPUT = (function () {
 
 (function () {
 	//images+layers+sprites
-	Layer = makeClass(null, function (spec) {
+	Layer = makeClass(function (spec) {
 		if (spec.extend) {
 			extend(this, spec.extend);
 		}
-		// TODO: for (x in this.prototype) { spec[x] = this[x]; } ??? (filter)
 		
 		this.draw = spec.draw;
 		this.z = spec.z;
+		
+		if (spec.viewport) {
+			this.activate(spec.viewport)
+		}
 	}, {
 		
 		viewport: null,
@@ -648,7 +645,7 @@ INPUT = (function () {
 		draw: null
 	});
 
-	MetaLayer = makeClass(Layer, function (spec) {
+	MetaLayer = Layer.makeClass(function (spec) {
 		Layer.call(this, spec);
 		
 		this.x = spec.x;
@@ -707,7 +704,7 @@ INPUT = (function () {
 	addImages: function (spec) {
 		var i;
 		
-        for (i = spec.images.pop(); i; i = spec.images.pop) {
+        for (i = spec.images.pop(); i; i = spec.images.pop()) {
             this.images.push(i);
         }
 		extend(this.imglist, spec.imglist);
@@ -737,29 +734,31 @@ INPUT = (function () {
 		
 	});
 	
-	Sprite = makeClass(Layer, function (spec) {
+	Sprite = Layer.makeClass(function (spec) {
 		Layer.call(this, spec);
 		
 		this.parent = spec.parent;
-		this.z = spec.z;
-		this.relx = spec.relx;
-		this.rely = spec.rely;
+		
+		this.x = spec.x;
+		this.y = spec.y;
 	}, {
 		parent: null,
-		z: 0,
 		
-		relx: 0,
-		rely: 0,
+		x: 0,
+		y: 0,
 		
-		isViewable: function (x1, x2, y1, y2) {
-			return this.parent.y1 <= y2 && this.parent.x1 <= x2 && this.parent.x2 >= x1 && this.parent.y2 >= y2;
+		getX: function () {
+			return this.parent ? this.parent.x+this.x : this.x;
+		},
+		getY: function () {
+			return this.parent ? this.parent.y+this.y : this.y;
 		}
 	});
 }());
 
 (function () {
 	//grids+cells+actors
-	Cell = makeClass(null, function (grid, cx, cy) {
+	Cell = makeClass(function (grid, cx, cy) {
 		this.grid = grid;
 		
 		this.cx = cx;
@@ -785,7 +784,7 @@ INPUT = (function () {
 		}
 	});
 
-	Grid = makeClass(null, function (gridw, gridh, cellw, cellh, cell) {
+	Grid = makeClass(function (gridw, gridh, cellw, cellh, cell) {
 		var i, j;
 		
 		cell = cell || this.cell;
@@ -845,7 +844,7 @@ INPUT = (function () {
 		}
 	});
 	
-	Actor = makeClass(null, function (spec) {
+	Actor = makeClass(function (spec) {
 		var i;
 		
 		this.x = spec.x;
@@ -890,6 +889,7 @@ INPUT = (function () {
 		this.bottom = spec.bottom || 0;
 		this.left = spec.left || 0;
 		this.right = spec.right || 0;
+		this.extend(spec.extend);
 		
 		this.dimAdjust();
 	}, {
@@ -995,7 +995,7 @@ INPUT = (function () {
 		},
 		
 		getMove: function (emptyQueue) {
-			var value, i, bufx = 0, bufy = 0;
+			var value = {}, i, bufx = 0, bufy = 0;
 			
 			
 			this.moveQueue.reverse();
@@ -1032,11 +1032,11 @@ INPUT = (function () {
 		},
 		
 		move: function () {
-			var data = getMove(true);
+			var data = this.getMove(true);
 			
 			this.x = this.x + data.relx;
 			this.y = this.y + data.rely;
-			extend(this, data);
+			this.extend(data);
 			
 			return this.dimAdjust();
 		}
@@ -1179,7 +1179,7 @@ INPUT = (function () {
 		
 	}
 	
-	CollisionCell = makeClass(Cell, function () {
+	CollisionCell = Cell.makeClass(function () {
 		this.shapes = { };
 		this.shapelist = { };
 		
@@ -1262,7 +1262,7 @@ INPUT = (function () {
 		}
 	});
 	
-	CollisionGrid = makeClass(Grid, function () {
+	CollisionGrid = Grid.makeClass(function () {
 		//TODO: subgrids
 		
 		this.pools = { };
@@ -1272,6 +1272,8 @@ INPUT = (function () {
 	
 		return Grid.apply(this, arguments);
 	}, {
+		cell: CollisionCell,
+		
 		subgrid: null,
 		
 		pools: null,
@@ -1401,14 +1403,12 @@ INPUT = (function () {
 		return value;
 	}
 	
-	Shape = makeClass(null, function (spec) {
+	Shape = makeClass(function (spec) {
 		this.parent = spec.parent;
 		this.pool = spec.pool;
 		
 		this.x = spec.x;
 		this.y = spec.y;
-		this.relx = spec.relx;
-		this.rely = spec.rely;
 	}, {
 		parent: null,
 		type: null,
@@ -1417,14 +1417,11 @@ INPUT = (function () {
 		x: 0,
 		y: 0,
 		
-		relx: 0,
-		rely: 0,
-		
 		getX: function () {
-			return this.parent ? this.parent.x+this.relx : this.x;
+			return this.parent ? this.parent.x+this.x : this.x;
 		},
 		getY: function () {
-			return this.parent ? this.parent.y+this.rely : this.y;
+			return this.parent ? this.parent.y+this.y : this.y;
 		},
 		
 		isColliding: function (otherShape) { 
@@ -1476,7 +1473,7 @@ INPUT = (function () {
 		}
 	});
 	
-	Box = makeClass(Shape, function (spec) {
+	Box = Shape.makeClass(function (spec) {
 		Shape.call(this, spec);
 		this.boundaryBox = this;
 		
@@ -1502,7 +1499,7 @@ INPUT = (function () {
 		}
 	});
 	
-	Circle = makeClass(Shape, function(spec) {
+	Circle = Shape.makeClass(function(spec) {
 		Shape.call(this, spec);
 		this.boundaryBox = new Box({ 
 			pool: this.pool,
@@ -1519,7 +1516,7 @@ INPUT = (function () {
 		radius: 0
 	});
 	
-	Line = makeClass(Shape, function (spec) {
+	Line = Shape.makeClass(function (spec) {
 		Shape.call(this, spec);
 		this.boundaryBox = {
 			pool: this.pool,
@@ -1538,7 +1535,7 @@ INPUT = (function () {
 		endy: 0
 	});
 	
-	Point = makeClass(Shape, function (spec) {
+	Point = Shape.makeClass(function (spec) {
 		Shape.call(this, spec);
 		this.boundaryBox = {
 			pool: this.pool,
@@ -1570,9 +1567,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		extend: {
 			startTime: frameTimer,
 			frameLength: 0,
-			fps: 0,
+			frameRate: 0,
 			
-			setFramePerSecond: function (num) {
+			setFrameRate: function (num) {
 				this.fps = num;
 				this.frameLength = 1000/num;
 			},
