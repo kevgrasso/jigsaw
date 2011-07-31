@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
 	var frameTimer = (new Date()).getTime(); //keep track of when frames should execute
 	
+	//register step-flow events
+    TRIGGER.addTrigger('step');
+	
     //setup canvas
 	VIEWPORT = new MetaLayer({
 		x: null,
@@ -16,7 +19,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		context: document.getElementById('display').getContext('2d'),
 		
 		attrib: {
-			startTime: frameTimer,
+			priority: 100,
+			
+			frameCount: 0,
 			frameLength: 0,
 			frameRate: 0,
 			
@@ -27,17 +32,14 @@ document.addEventListener('DOMContentLoaded', function () {
                         
 		}
 	});
-    
-	//register step-flow events
-    TRIGGER.addTrigger('step');
+    TRIGGER.subscribe('step', VIEWPORT, VIEWPORT.render, 'global');
     
     VIEWPORT.boot = include('boot.js');
     (function step() {
         var pauseTime;	//time to wait for next frame
+        VIEWPORT.frameCount += 1;
         
-        TRIGGER.fireTrigger('step'); //signal primary step code
-        
-        VIEWPORT.render();
+        TRIGGER.fireTrigger('step'); //signal primary step code1
         
 		frameTimer += VIEWPORT.frameLength;
 		pauseTime = frameTimer - (new Date()).getTime();
