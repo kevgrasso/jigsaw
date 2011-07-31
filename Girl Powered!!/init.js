@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
     TRIGGER.subscribe('step', VIEWPORT, VIEWPORT.render, 'global');
     
-    VIEWPORT.boot = include('boot.js');
+    VIEWPORT.boot = include('title.js');
     (function step() {
         var pauseTime;	//time to wait for next frame
         VIEWPORT.frameCount += 1;

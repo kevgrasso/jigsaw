@@ -1,7 +1,7 @@
 //Jigsaw test
 //Kevin Grasso
 
-//for rewrite:
+//next:
 //cleanup shapes/fix ejectShape
 //add getPointFunction for INPUT.updateMouse
 //cleanup sprite (SpriteLayer)

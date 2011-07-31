@@ -70,7 +70,7 @@ function include (filename, callback, bAsync) {
 	    }
 	};
 	//finish loading script
-	e.src = filename;
+	e.src = '/include/'+filename;
 	head.appendChild(e);
 	
 	return obj;
