@@ -32,6 +32,27 @@
 			
 		draw: null
 	});
+	
+	Sprite = Layer.makeClass(function (spec) {
+		Layer.call(this, spec);
+		
+		this.parent = spec.parent;
+		
+		this.x = spec.x;
+		this.y = spec.y;
+	}, {
+		parent: null,
+		
+		x: 0,
+		y: 0,
+		
+		getX: function () {
+			return this.parent ? this.parent.x+this.x : this.x;
+		},
+		getY: function () {
+			return this.parent ? this.parent.y+this.y : this.y;
+		}
+	});
 
 	MetaLayer = Layer.makeClass(function (spec) {
 		Layer.call(this, spec);
@@ -117,29 +138,9 @@
 		draw: function (c, viewX, viewY) {
 			this.render();
 			
+			c.translate(this.x, this.y);
 			c.drawImage(this.context, viewX, viewY);
 		}
 		
-	});
-	
-	Sprite = Layer.makeClass(function (spec) {
-		Layer.call(this, spec);
-		
-		this.parent = spec.parent;
-		
-		this.x = spec.x;
-		this.y = spec.y;
-	}, {
-		parent: null,
-		
-		x: 0,
-		y: 0,
-		
-		getX: function () {
-			return this.parent ? this.parent.x+this.x : this.x;
-		},
-		getY: function () {
-			return this.parent ? this.parent.y+this.y : this.y;
-		}
 	});
 }());

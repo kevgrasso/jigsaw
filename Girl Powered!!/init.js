@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	
     //setup canvas
 	VIEWPORT = new MetaLayer({
+		context: document.getElementById('display').getContext('2d'),
+		
 		x: null,
 		y: null,
 		
@@ -14,9 +16,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		width: document.getElementById('display').width,
 		height: document.getElementById('display').height,
-		
-		draw: MetaLayer.render,
-		context: document.getElementById('display').getContext('2d'),
 		
 		attrib: {
 			priority: 100,
@@ -30,6 +29,11 @@ document.addEventListener('DOMContentLoaded', function () {
 				this.frameLength = num;
 			}
                         
+		},
+		
+		draw: function () {
+			this.render();
+			//INPUT.updateMouse();
 		}
 	});
     TRIGGER.subscribe('step', VIEWPORT, VIEWPORT.render, 'global');

@@ -2,11 +2,8 @@
 //Kevin Grasso
 
 //for rewrite:
-//split jsgame into multiple files
-//debug
-
-//change everything back to framecounts
 //cleanup shapes/fix ejectShape
+//add getPointFunction for INPUT.updateMouse
 //cleanup sprite (SpriteLayer)
 //cleanup boot
 //get rid of makeClass-- generic Object.prototype.isA function instead
