@@ -5,8 +5,9 @@ Requires:
 HTML canvas
 DOM events
 DOMContentLoaded
-native JSON
 a script loaded event
+mouse pagex+pagey
+native JSON
 @font-face
 HTML audio
 
