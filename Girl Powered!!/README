@@ -6,14 +6,14 @@ HTML canvas
 DOM events
 DOMContentLoaded
 a script loaded event
-mouse pagex+pagey
 native JSON
+mouse pagex+pagey
+localStorage
 @font-face
 HTML audio
 
 have backup:
 WOFF fonts?
-localStorage?
 document.head?
 setImmediate?
 
@@ -28,6 +28,6 @@ Internet Explorer 9+
 ~CHANGELOG~
 Proto1:
 *project exists
-*event, input, collision, viewport, actor, and map systems under construction
+*basic engine under construction
 *basic player physics
 *using pixastic library
