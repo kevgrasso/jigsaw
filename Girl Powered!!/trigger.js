@@ -23,6 +23,7 @@ TRIGGER = (function () {
 			return;
         },
         
+        //new functions for expiring
         subscribe: function (trigger, obj, func) {
             var id = obj.getid() + '+' + func.getid(),
 				i, buckets = Array.prototype.slice.call(arguments, 3),
