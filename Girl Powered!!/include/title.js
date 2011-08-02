@@ -80,7 +80,7 @@ VIEWPORT.setFrameLength(1000);
 INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 'left', 40: 'down', 65: 'a', 87: 'w', 83: 's', 68: 'd', 32: 'space'});
 
 (function () {
-	var that = include.targets['boot.js'].pop(),
+	var that = include.targets['title.js'].pop(),
 		player, bgcolor, debug,
 		test, mapDisplay,
 		solids, stats;
@@ -91,7 +91,6 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 	}, viewport: VIEWPORT, z:-1 });
 	
 	debug = new Layer({draw:function (c) {
-		
 		c.fillStyle = 'white';
 		c.font = '12pt Arial';
 		
@@ -108,7 +107,6 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		if (that.collide) {
 			c.fillText('collision', 600, 20);
 		}
-		
 	}, viewport: VIEWPORT, z:100 });
 	
 	grid = new CollisionGrid(740, 500, 120, 125);

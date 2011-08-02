@@ -39,14 +39,13 @@ function makeClass(subc, attributes, superc) {
 }
 
 //TODO: allow hard refresh of scripts to be dynamically loaded
-function include (filename, callback, bAsync) {
+function include (filename, callback) {
 	var head = document.head,
 		e = document.createElement('script'),
 		targets = include.targets,
 		obj = { };
 	e.type = 'application/javascript';
 	e.charset = 'utf-8';
-	e.async = bAsync || true;
 	
 	//setup target object
 	if (!targets[filename] ) {
@@ -70,7 +69,7 @@ function include (filename, callback, bAsync) {
 	    }
 	};
 	//finish loading script
-	e.src = '/include/'+filename;
+	e.src = 'include/'+filename;
 	head.appendChild(e);
 	
 	return obj;
