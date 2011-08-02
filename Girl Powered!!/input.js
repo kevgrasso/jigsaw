@@ -1,3 +1,6 @@
+//keyDown    keyTapUp    keyHold    keyHoldUp    keyUp
+//keyDblDown keyDblTapUp keyDblHold keyDblHoldUp keyDblUp
+
 INPUT = (function () {
 	//hidden vars
 	var boolStream = false,
@@ -41,6 +44,8 @@ INPUT = (function () {
         state: { },
         keydown: { },
         keyup: { },
+        hold: {},
+        double: {},
 		
 		lastkey: null,
 		
