@@ -24,31 +24,34 @@ TRIGGER = (function () {
         },
         
         //new functions for expiring
-        subscribe: function (trigger, obj, func) {
-            var id = obj.getid() + '+' + func.getid(),
-				i, buckets = Array.prototype.slice.call(arguments, 3),
-				entry;
+        subscribe: function (spec) {
+            var i, buckets,
+            	id = spec.trigger+spec.func.getid();
 			
             if (!objid[id]) {
-            	entry = {
-    					func: func,
-    					obj: obj,
-    					buckets: { }
-    			};
-				objid[id] = entry;
-				triggerlist[trigger].push(entry);
+				objid[id] = spec;
+				triggerlist[spec.trigger].push(spec);
             } else {
-				entry = objid[id];
+				objid[id].extend(spec);
 			}
-				
-			for (i = 0; i < buckets.length; i += 1) {
-				entry.buckets[buckets[i]] = true;
-			}
+            
+            if (spec.bucket) {
+            	if (typeof spec.bucket === 'string') {
+            		buckets = spec.bucket;
+            		spec.bucket = { };
+            		spec.bucket[buckets] = true;
+            	} else {
+	            	buckets = spec.bucket.slice(0);
+					for (i = 0; i < buckets.length; i += 1) {
+						spec.bucket[buckets[i]] = true;
+					}
+            	}
+            }
 			
-			return entry;
+			return spec;
         },											
-        unsubscribe: function (trigger, obj, func) {
-            var id = obj.getid() + '+' + func.getid();
+        unsubscribe: function (trigger, func) {
+            var id = trigger+func.getid();
 			triggerlist[trigger].remove(objid[id]);
 			delete objid[id];
 			
@@ -60,9 +63,9 @@ TRIGGER = (function () {
 			
 			triggerlist[trigger].save();
 			for (i = triggerlist[trigger].pop(); i; i = triggerlist[trigger].pop()) {
-				for (j in i.buckets) {
+				for (j in i.bucket) {
 				
-					if (i.buckets.hasOwnProperty(j) && bucketstate[j]) {
+					if (i.bucket.hasOwnProperty(j) && bucketstate[j]) {
 						i.func.apply(i.obj, args);
 						break;
 					}

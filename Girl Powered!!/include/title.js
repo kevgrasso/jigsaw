@@ -416,7 +416,12 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		return this.move();
 		
 	};
-	TRIGGER.subscribe('step', player, player.step, 'global');
+	TRIGGER.subscribe({
+		trigger: 'step',
+		func: player.step,  
+		obj: player, 
+		priority: 50,
+		bucket: 'global'});
 	
 	test = new Actor({
 		x: 150,

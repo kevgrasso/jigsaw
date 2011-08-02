@@ -18,8 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		height: document.getElementById('display').height,
 		
 		attrib: {
-			priority: 100,
-			
 			frameCount: 0,
 			frameLength: 0,
 			frameRate: 0,
@@ -36,7 +34,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			//INPUT.updateMouse();
 		}
 	});
-    TRIGGER.subscribe('step', VIEWPORT, VIEWPORT.render, 'global');
+    TRIGGER.subscribe({
+    	trigger: 'step',
+    	func: VIEWPORT.render,
+    	obj: VIEWPORT,
+    	priority: 25,
+    	bucket: 'global'
+    });
     
     VIEWPORT.boot = include('title.js');
     (function step() {
