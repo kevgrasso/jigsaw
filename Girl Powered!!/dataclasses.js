@@ -63,15 +63,14 @@
 		}
 	});
 
-	BinaryHeap = makeClass(function (scoreName, content){ // this class written by Marijn Haverbeke:
-		this.content = content || [];							// http://eloquentjavascript.net/appendix2.html
+	BinaryHeap = makeClass(function (scoreName, content){ // this class mostly written by Marijn Haverbeke:
+		this.content = content || [];					  // http://eloquentjavascript.net/appendix2.html
 		this.scoreName = scoreName;
 		
-		this.history = [];
 	}, {
 		content: null,
-		scoreName: null,
 		history: null,
+		scoreName: null,
 		
 		push: function(element) {
 			// Add the new element to the end of the array.
@@ -110,11 +109,11 @@
 						} else {
 							this.bubbleUp(i);
 						}
-						return;
 					}
+					return;
 				}
-				throw new Error("Node not found.");
 			}
+			throw new Error("Node not found.");
 		},
 
 		size: function () {
