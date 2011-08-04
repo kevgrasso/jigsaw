@@ -69,7 +69,7 @@ function include (filename, callback) {
 	    }
 	};
 	//finish loading script
-	e.src = 'include/'+filename;
+	e.src = 'include/'+filename+'.js';
 	head.appendChild(e);
 	
 	return obj;
@@ -83,6 +83,10 @@ function getSurface(w, h) {
     canvas.setAttribute('height', h);  
 	
 	return canvas.getContext('2d');
+}
+
+function isValue(x) {
+	return (typeof x !== 'undefined') && (x !== null);
 }
 
 
@@ -132,6 +136,8 @@ function getSurface(w, h) {
 		}
 		return true;
 	};
+	
+	proto.isDefined = true;
 	
 	CanvasRenderingContext2D.prototype.clear = function () {
 		this.clearRect(0, 0, this.canvas.width, this.canvas.height);
