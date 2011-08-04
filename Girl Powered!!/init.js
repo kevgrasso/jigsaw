@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		height: document.getElementById('display').height,
 		
 		attrib: {
-			frameCount: 0,
 			frameLength: 0,
 			frameRate: 0,
 			
@@ -39,15 +38,17 @@ document.addEventListener('DOMContentLoaded', function () {
     	func: VIEWPORT.render,
     	obj: VIEWPORT,
     	priority: 25,
-    	bucket: 'global'
+    	context: 'global'
     });
     
-    VIEWPORT.boot = include('title.js');
+    VIEWPORT.boot = include('title');
     (function step() {
         var pauseTime;	//time to wait for next frame
-        VIEWPORT.frameCount += 1;
         
-        TRIGGER.fireTrigger('step'); //signal primary step code1
+        TRIGGER.fireTrigger('step');
+        
+        //increment time
+        TRIGGER.tick();
         
 		frameTimer += VIEWPORT.frameLength;
 		pauseTime = frameTimer - (new Date()).getTime();

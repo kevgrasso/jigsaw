@@ -2,14 +2,16 @@
 //Kevin Grasso
 
 //next:
+//expiring triggers
+//test collisions
+//add callPointFunction for INPUT.updateMouse
 //cleanup shapes/fix ejectShape
-//add getPointFunction for INPUT.updateMouse
 //cleanup sprite (SpriteLayer)
 //cleanup boot
 //get rid of makeClass-- generic Object.prototype.isA function instead
 //use DOM events for readystate in Include
-//attach input and display to triggers 
-//buckets with timers and triggers with expiration times (clear + clearAll functions)
+//move framerate stuff to TRIGGER
+//new name for buckets
 //finish Map functions
 //INPUT.updateMouse(): checks given CollisionGrid, either pushes SelfShape/MouseShape into Heap or checks out subgrid/viewport containing. BinaryHeap is made a
 //	attribute of INPUT. mouse events bubble down array until false is returned. do something about moveover/out.
@@ -58,6 +60,7 @@
 //chunk loading/unloading
 //
 //OTHER:
+//MetaLayer.render could maybe be replaced with a trigger (but what if the metalayer is deleted??) 
 //matrix2d class
 //pause on Window losing focus (throttle framerate to 2fps or lower)
 //playing same file multiple times
@@ -80,7 +83,7 @@ VIEWPORT.setFrameLength(1000);
 INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 'left', 40: 'down', 65: 'a', 87: 'w', 83: 's', 68: 'd', 32: 'space'});
 
 (function () {
-	var that = include.targets['title.js'].pop(),
+	var that = include.targets.title.pop(),
 		player, bgcolor, debug,
 		test, mapDisplay,
 		solids, stats;
@@ -419,7 +422,7 @@ INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 
 		func: player.step,  
 		obj: player, 
 		priority: 50,
-		bucket: 'global'});
+		context: 'global'});
 	
 	test = new Actor({
 		x: 150,
