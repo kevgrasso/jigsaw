@@ -1,5 +1,8 @@
-//keyDown    keyTapUp    keyHold    keyHoldUp    keyUp
-//keyDblDown keyDblTapUp keyDblHold keyDblHoldUp keyDblUp
+//keyDown      keyTapUp      keyHold      keyHoldUp      keyUp
+//keyPressDown keyPressTapUp keyPressHold keyPressHoldUp keyPressUp
+//keyTapDown   keyTapTapUp   keyTapHold   keyTapHoldUp   keyTapUp
+//keyHoldDown  keyHoldTapUp  keyHoldHold  keyHoldHoldUp  keyHoldUp
+//keyUp has repeats-- rename
 
 INPUT = (function () {
 	//hidden vars
