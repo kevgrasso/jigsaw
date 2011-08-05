@@ -62,8 +62,17 @@ TRIGGER = (function () {
 				objid[id].extend(spec);
 			}
             
-            if (isValue(spec.timer)) {
-            	spec.count = spec.timer;
+            if (isValue(spec.length)) {
+            	spec.count = spec.length;
+            	switch(spec.timer){
+            	case 'timeout':
+            	case 'continuous':
+            	case 'loop':
+            		break;
+            	default:
+            		throw new Error('spec.timer is '+spec.timer);
+            		break;
+            	}
             }
             
             if (isValue(spec.context)) {
@@ -98,10 +107,10 @@ TRIGGER = (function () {
 						if (isValue(i.count)) {
 							i.count -= 1;
 							
-							if (!isValue(i.continuous) && i.count > 0) { //immediate code
+							if (i.timer ==='continuous' && i.count > 0) { //immediate code
 								break;
-							} else if (isValue(i.loop) && i.count <= 0) { //looping code
-								i.count = i.timer;
+							} else if (i.timer ==='loop' && i.count <= 0) { //looping code
+								i.count = i.frames;
 							} else if (i.count <= 0) { //timeout code
 								remove.push({trigger: trigger, func:i.func});
 							} 
