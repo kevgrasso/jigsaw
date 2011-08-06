@@ -1,7 +1,7 @@
-//keyDown      keyTapUp      keyHold      keyHoldUp      keyUp
-//keyPressDown keyPressTapUp keyPressHold keyPressHoldUp keyPressUp
-//keyTapDown   keyTapTapUp   keyTapHold   keyTapHoldUp   keyTapUp
-//keyHoldDown  keyHoldTapUp  keyHoldHold  keyHoldHoldUp  keyHoldUp
+//keyDown         keyUpTap         keyHold         keyUpHold         keyUp
+//keyPressAndDown keyPressAndUpTap keyPressAndHold keyPressAndUpHold keyPressAndUp
+//keyTapAndDown   keyTapAndUpTap   keyTapAndHold   keyTapAndUpHold   keyTapAndUp
+//keyHoldAndDown  keyHoldAndUpTap  keyHoldAndHold  keyHoldAndUpHold  keyHoldAndUp
 //keyUp has repeats-- rename
 
 INPUT = (function () {
