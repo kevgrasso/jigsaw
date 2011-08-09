@@ -54,4 +54,4 @@ document.addEventListener('DOMContentLoaded', function () {
 		pauseTime = frameTimer - (new Date()).getTime();
         setTimeout(step, pauseTime <= 1 ? 1 : pauseTime);
     }());
-}, true); //TODO: is true/stopImmediatePropagation faster?
+}, false);
