@@ -95,11 +95,10 @@ TRIGGER = (function () {
         },
         
         fireTrigger: function(trigger) {
-            var i, j, remove = [],
+            var i, j, triggerCopy = triggerlist[trigger].copy();
             	args = Array.prototype.slice.call(arguments, 1);
 			
-			triggerlist[trigger].save();
-			for (i = triggerlist[trigger].pop(); isValue(i); i = triggerlist[trigger].pop()) {
+			for (i = triggerCopy.pop(); isValue(i); i = triggerCopy.pop()) {
 				for (j in i.context) {
 				
 					if (i.context.hasOwnProperty(j) && isValue(contextstate[j])) {
@@ -112,7 +111,7 @@ TRIGGER = (function () {
 							} else if (i.timer ==='loop' && i.count <= 0) { //looping code
 								i.count = i.frames;
 							} else if (i.count <= 0) { //timeout code
-								remove.push({trigger: trigger, func:i.func});
+								this.unsubscribe(trigger, i.func);
 							} 
 						}
 						
@@ -126,11 +125,6 @@ TRIGGER = (function () {
 					}
 				
 				}
-			}
-			triggerlist[trigger].restore();
-			
-			for (i = remove.pop(); isValue(i); i = remove.pop()) {
-				this.unsubscribe(i.trigger, i.func);
 			}
 		}
     };

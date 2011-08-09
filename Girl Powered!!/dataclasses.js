@@ -69,7 +69,6 @@
 		
 	}, {
 		content: null,
-		history: null,
 		scoreName: null,
 		
 		push: function(element) {
@@ -188,12 +187,8 @@
 		},
 		
 		//store and restore the current heap state ala HTML Canvas
-		save: function () {
-			this.history = this.content.slice(0);
-		},
-		
-		restore: function () {
-			this.content = this.history;
+		copy: function () {
+			return new BinaryHeap(this.scoreName, this.content.slice(0));
 		}
 	});
 

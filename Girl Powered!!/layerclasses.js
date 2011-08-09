@@ -124,15 +124,14 @@
 	},
     
     render: function () {
-        var c = this.context, i;
+        var c = this.context, i,
+        imgcopy = this.images.copy();
         
-		this.images.save();
-        for (i = this.images.pop(); i; i = this.images.pop()) {
+        for (i = imgcopy.pop(); i; i = imgcopy.pop()) {
             c.save();
             i.draw(c, this.viewX, this.viewY);
             c.restore();
         }
-		this.images.restore();
     },
 		
 		draw: function (c, viewX, viewY) {
