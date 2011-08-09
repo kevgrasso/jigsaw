@@ -5,15 +5,20 @@ var COLLISION, DATA, TRIGGER, JigClass, getid, inherit, FRAGMENT, INPUT, MAP, MA
 	Coord, LinkNode, BinaryHeap, Matrix2, Layer, MetaLayer, Sprite, Cell, Grid, Actor, CollisionCell, CollisionGrid,
 	Shape, Box, Circle, Line, Point;
 
-document.head = document.getElementsByTagName('head')[0]; //I'm not sure if this expands support any, but better safe than sorry
-														  //TODO: check if it does
+if (!document.head) { //I think this allows a few more versions of Opera
+	document.head = document.getElementsByTagName('head')[0];
+}
 
 // class/object functions
-function extend(target, src) {
+function extend(target, src, depth) {
     var i;
     for (i in src) {
         if (src.hasOwnProperty(i)) {
-            target[i] = src[i];
+        	if (isValue(depth) && depth !== 0 && typeof src[i] == 'object' && src[i] !== null) {
+        		target[i] = src[i].clone(depth<0? depth:depth-1); //deep copy
+        	} else {
+        		target[i] = src[i]; //normal copy
+        	}
         }
     }
     
@@ -53,11 +58,9 @@ function include (filename, callback) {
 	}
 	targets[filename].push(obj);
 	
-	//all browsers should call this when script is finished
-	e.onload = e.onreadystatechange = function () {
-	    if (!this.readyState || this.readyState == "loaded" || this.readyState == "complete") {
-	        //cleanup
-	        e.onload = e.onreadystatechange = null; // Plug IE memory leak-- even there in IE9!
+	function cleanup () {
+	    if (this.readyState == 'complete') {
+	        e.removeEventListener('onload', cleanup, false); // Plug IE memory leak-- even there in IE9!
 	        if (targets[filename].length === 0) {
 	        	delete targets[filename];
 	        }
@@ -67,7 +70,9 @@ function include (filename, callback) {
 	        	callback(obj, filename);
 	        }
 	    }
-	};
+	}
+	e.addEventListener('onload', cleanup, false); 	//all browsers should call this when script is finished
+	
 	//finish loading script
 	e.src = 'include/'+filename+'.js';
 	head.appendChild(e);
@@ -102,12 +107,12 @@ function isValue(x) {
         return extend(new Superc(), spec);
     };
     
-    proto.clone = function () {
-        return extend({ }, this);
+    proto.clone = function (depth) {
+        return extend({ }, this, depth);
     };
 	
-	proto.extend = function(src) {
-		return extend(this, src);
+	proto.extend = function(src, depth) {
+		return extend(this, src, depth);
 	};
 
     lastid = 0;
@@ -124,13 +129,17 @@ function isValue(x) {
     
 	proto.makeClass = function (subc, attributes) {
 		return makeClass(subc, attributes, this);
-	}
+	};
 	
 	proto.isEmpty = function () {
-		var i;
+		var i, exemptions = {};
+		
+		for (i=0; i<arguments.length;i+=1) {
+			exemptions[arguments[i]] = true;
+		}
 		
 		for (i in this) {
-			if (this.hasOwnProperty(i)) {
+			if (this.hasOwnProperty(i) && !exemptions[i]) {
 				return false;
 			}
 		}
