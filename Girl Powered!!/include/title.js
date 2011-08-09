@@ -80,7 +80,6 @@
 //combos have minor effect on damage, major effect on pickups
 
 VIEWPORT.setFrameLength(50);
-INPUT.setKeys({27: 'esc', 49: '1', 50: '2', 51: '3', 39: 'right', 38: 'up', 37: 'left', 40: 'down', 65: 'a', 87: 'w', 83: 's', 68: 'd', 32: 'space'});
 
 (function () {
 	var that = include.targets.title.pop(),
