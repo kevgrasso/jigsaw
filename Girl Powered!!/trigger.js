@@ -1,18 +1,14 @@
 TRIGGER = (function () {
     //hidden vars
-    var triggerlist = { }, //includes subscriber info
-		contextstate = { }, 
-		objid = { }, //rename 'entries'
-		currentTrigger = null
-		//TODO: some sort of buffer for currentTrigger stuff
+    var triggerlist = {}, //includes subscriber info
+		contextstate = {}, 
+		entries = {};
+		//TODO: some sort of buffer for currentTrigger stuff (because of BinaryHeap.history)
     
-    function emptyBuffer() {
-    	
-    }
     
     
     return {
-    	frameCount: { },
+    	frameCount: {},
     	
         addTrigger: function (trigger) {
         	if (isValue(triggerlist[trigger])) {
@@ -21,7 +17,7 @@ TRIGGER = (function () {
             triggerlist[trigger] = new BinaryHeap('priority');
         },
         removeTrigger: function (trigger) {
-        	//remove all entries from objid
+        	//remove all entries from entries
             delete triggerlist[trigger];
         },
         
@@ -55,11 +51,11 @@ TRIGGER = (function () {
             var i, contexts,
             	id = spec.trigger+spec.func.getid();
 			
-            if (!isValue(objid[id])) {
-				objid[id] = spec;
+            if (!isValue(entries[id])) {
+				entries[id] = spec;
 				triggerlist[spec.trigger].push(spec);
             } else {
-				objid[id].extend(spec);
+				entries[id].extend(spec);
 			}
             
             if (isValue(spec.length)) {
@@ -90,8 +86,8 @@ TRIGGER = (function () {
         },											
         unsubscribe: function (trigger, func) {
             var id = trigger+func.getid();
-			triggerlist[trigger].remove(objid[id]);
-			delete objid[id];
+			triggerlist[trigger].remove(entries[id]);
+			delete entries[id];
         },
         
         fireTrigger: function(trigger) {
