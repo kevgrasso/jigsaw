@@ -8,7 +8,7 @@
 		}
 		
 		if (spec.viewport) {
-			this.activate(spec.viewport)
+			this.activate(spec.viewport);
 		}
 	}, {
 		
