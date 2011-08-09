@@ -423,7 +423,7 @@
 					return {x:xDepth, y:0};
 				}
 			} else {
-				return {x:xDepth||0, y:yDepth||0} 
+				return {x:xDepth||0, y:yDepth||0};
 			}
 		}
 	});
