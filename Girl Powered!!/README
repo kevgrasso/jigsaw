@@ -5,7 +5,7 @@ Requires:
 HTML canvas
 DOM events
 DOMContentLoaded
-a script loaded event
+a script loaded event (can just onload work?)
 native JSON
 mouse pagex+pagey
 localStorage
@@ -13,16 +13,15 @@ localStorage
 HTML audio
 
 have backup:
-WOFF fonts?
-document.head?
-setImmediate?
+WOFF fonts
+document.head
 
 
 Recomended browsers:
 Google Chrome 6+
-Mozilla Firefox 3.5+?
+Mozilla Firefox 3.5+
 Safari 3.2+
-Opera 10.60+
+Opera 10.50+
 Internet Explorer 9+
 
 ~CHANGELOG~
