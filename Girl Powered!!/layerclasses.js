@@ -83,8 +83,7 @@
     viewx: 0,
     viewy: 0,
     
-    element: null,	//html canvas element goes here
-    context: null,	//2d drawing context goes here
+    canvas: null,	//2d drawing context goes here
     width: 0,
     height: 0,
     
@@ -128,9 +127,9 @@
         imgcopy = this.images.copy();
         
         for (i = imgcopy.pop(); i; i = imgcopy.pop()) {
-            c.save();
+        	c.save();
             i.draw(c, this.viewX, this.viewY);
-            c.restore();
+        	c.restore();
         }
     },
 		
