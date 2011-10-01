@@ -146,7 +146,38 @@ function isValue(x) {
 		return true;
 	};
 	
-	proto.isDefined = true;
+	proto.hasKey = function (key) {
+		var i;
+		
+		for (i in this) {
+			if (this.hasOwnProperty(i) && i === key) {
+				return true;
+			}
+		}
+		return false;
+	};
+	
+	proto.hasValue = function (value) {
+		var i;
+		
+		for (i in this) {
+			if (this.hasOwnProperty(i) && this[i] === value) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	proto.getKey = function (value) {
+		var i;
+		
+		for (i in this) {
+			if (this.hasOwnProperty(i) && this[i] === value) {
+				return i;
+			}
+		}
+		return undefined;
+	};
 	
 	CanvasRenderingContext2D.prototype.clear = function () {
 		this.clearRect(0, 0, this.canvas.width, this.canvas.height);
