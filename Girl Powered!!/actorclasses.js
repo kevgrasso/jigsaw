@@ -243,7 +243,7 @@
 			
 			
 			this.moveQueue.reverse();
-			for (i = this.moveQueue.pop(); this.moveQueue[0]; i = this.moveQueue.pop()) { 
+			for (i = this.moveQueue.pop(); i; i = this.moveQueue.pop()) { 
 				if (i.relx) {
 					bufx += i.relx;
 				}
@@ -265,7 +265,7 @@
 			}
 			value.relx = bufx;
 			value.rely = bufy;
-			value.angle = Math.atan(bufy/bufx) || this.angle;
+			value.angle = isValue(bufx) && Math.atan(bufy/bufx) || this.angle; //bufx could be zero
 			value.dist = Math.sqrt(Math.pow(bufx, 2) + Math.pow(bufy, 2));
 			
 			if (!emptyQueue) {
