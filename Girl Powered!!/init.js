@@ -18,17 +18,21 @@ document.addEventListener('DOMContentLoaded', function () {
 		height: document.getElementById('display').height,
 		
 		attrib: {
+			audio: null, //AudioContext, webkitAudioContext
+			
 			frameLength: 0,
 			frameRate: 0,
+			frameLock: true,
+			frameTime: 0,
 			
 			setFrameLength: function (num) {
 				this.fps = 1000/num;
 				this.frameLength = num;
-			}
+			},
                         
 		},
 		
-		draw: function () {
+		draw: function () { //todo: start dropping frames if the time gap gets too big
 			this.render();
 			//INPUT.updateMouse();
 		}
@@ -43,15 +47,20 @@ document.addEventListener('DOMContentLoaded', function () {
     
     VIEWPORT.boot = include('title');
     (function step() {
-        var pauseTime;	//time to wait for next frame
+        var pauseTime, currentTime;	//time to wait for next frame
         
+        //trigger 
         TRIGGER.fireTrigger('step');
         
         //increment time
         TRIGGER.tick();
         
 		frameTimer += VIEWPORT.frameLength;
-		pauseTime = frameTimer - (new Date()).getTime();
+		currentTime = (new Date()).getTime();
+		if (frameTimer-currentTime < -500) { //limit lag catch-up to 10 frames
+			frameTimer = currentTime-500;
+		}
+		pauseTime = frameTimer-currentTime;
         setTimeout(step, pauseTime <= 1 ? 1 : pauseTime);
     }());
 }, false);
