@@ -3,7 +3,35 @@ TRIGGER = (function () {
     var triggerlist = {}, //includes subscriber info
 		contextstate = {}, 
 		entries = {};
-		//TODO: some sort of buffer for currentTrigger stuff (because of BinaryHeap.history)
+    
+    function parseEntry(entry, trigger, context, args) {
+    	var i;
+    	for (i in entry.context) {
+			if (entry.context.hasOwnProperty(i) && isValue(contextstate[i])
+					&& (!context || (context === i))) {
+				//timer code
+				if (isValue(entry.timerCount)) {
+					entry.timerCount -= 1;
+					
+					if (entry.timerType !== 'continuous' && entry.timerCount > 0) { //immediate code
+						return;
+					} else if (entry.timerType ==='loop' && entry.timerCount <= 0) { //looping code
+						entry.timerCount = entry.timerLength;
+					} else if (entry.timerCount <= 0) { //timeout code
+						TRIGGER.unsubscribe(trigger, entry.func, entry.trigId);
+					} 
+				}
+				
+				//call the function. if there is an object specified, make it the thisobj
+				if (!isValue(entry.obj)) {
+					entry.func.apply(null, entry.autoArgs.concat(args));
+				} else {
+					entry.func.apply(entry.obj, entry.autoArgs.concat(args));
+				}
+				return;
+			}
+		}
+    }
     
     
     
@@ -48,79 +76,70 @@ TRIGGER = (function () {
         },
         
         subscribe: function (spec) {
-            var i, contexts,
-            	id = spec.trigger+spec.func.getid();
-			
-            if (!isValue(entries[id])) {
-				entries[id] = spec;
-				triggerlist[spec.trigger].push(spec);
-            } else {
-				entries[id].extend(spec);
+            var i, j, temp, id;
+            
+            if (!Array.isArray(spec.trigger)) {
+            	spec.trigger = [spec.trigger];
+            }
+            
+			for (i=0; i<spec.trigger.length; i+=1) {
+				id = spec.trigger[i]+spec.func.getid()+':'+spec.trigId;
+	            if (!isValue(entries[id])) {
+					entries[id] = spec;
+					triggerlist[spec.trigger[i]].push(spec);
+	            } else {
+					entries[id].extend(spec);
+				}
+	            
+	            if (isValue(spec.timerLength)) {
+	            	spec.timerCount = spec.timerLength;
+	            	switch(spec.timerType){
+	            	case 'timeout':
+	            	case 'continuous':
+	            	case 'loop':
+	            		break;
+	            	default:
+	            		throw new Error('spec.timerType is '+spec.timerType);
+	            		break;
+	            	}
+	            }
+	            
+	            if (isValue(spec.context)) {
+	            	if (typeof spec.context === 'string') {
+	            		temp = spec.context;
+	            		spec.context = { };
+	            		spec.context[temp] = true;
+	            	} else {
+		            	temp = spec.context.slice(0);
+		            	spec.context = {};
+						for (j = 0; j < temp.length; j += 1) {
+							spec.context[temp[j]] = true;
+						}
+	            	}
+	            }
+	            if (!spec.autoArgs) { //in case no auto-args are given
+	            	spec.autoArgs = [];
+	            }
 			}
             
-            if (isValue(spec.length)) {
-            	spec.count = spec.length;
-            	switch(spec.timer){
-            	case 'timeout':
-            	case 'continuous':
-            	case 'loop':
-            		break;
-            	default:
-            		throw new Error('spec.timer is '+spec.timer);
-            		break;
-            	}
-            }
-            
-            if (isValue(spec.context)) {
-            	if (typeof spec.context === 'string') {
-            		contexts = spec.context;
-            		spec.context = { };
-            		spec.context[contexts] = true;
-            	} else {
-	            	contexts = spec.context.slice(0);
-					for (i = 0; i < contexts.length; i += 1) {
-						spec.context[contexts[i]] = true;
-					}
-            	}
-            }
+            return spec.func;
         },											
-        unsubscribe: function (trigger, func) {
-            var id = trigger+func.getid();
+        unsubscribe: function (trigger, func, trigId) { //todo: support unsubscribing from multiple triggers
+            var id = trigger+func.getid()+':'+trigId;
 			triggerlist[trigger].remove(entries[id]);
 			delete entries[id];
         },
         
-        fireTrigger: function(trigger) {
-            var i, j, triggerCopy = triggerlist[trigger].copy();
-            	args = Array.prototype.slice.call(arguments, 1);
+        fireTrigger: function(trigger, context) {
+            var i, triggerCopy = triggerlist[trigger] && triggerlist[trigger].copy();
+            	args = Array.prototype.slice.call(arguments, 2);
+            	
+            if (!triggerCopy) {
+            	return;
+            }
 			
 			for (i = triggerCopy.pop(); isValue(i); i = triggerCopy.pop()) {
-				for (j in i.context) {
-				
-					if (i.context.hasOwnProperty(j) && isValue(contextstate[j])) {
-						//timer code
-						if (isValue(i.count)) {
-							i.count -= 1;
-							
-							if (i.timer ==='continuous' && i.count > 0) { //immediate code
-								break;
-							} else if (i.timer ==='loop' && i.count <= 0) { //looping code
-								i.count = i.frames;
-							} else if (i.count <= 0) { //timeout code
-								this.unsubscribe(trigger, i.func);
-							} 
-						}
-						
-						//call the function. if there is an object specified, make it thisobj
-						if (!isValue(i.obj)) {
-							i.func.apply(null, args);
-						} else {
-							i.func.apply(i.obj, args);
-						}
-						break;
-					}
-				
-				}
+				parseEntry(i, trigger, context, args);
 			}
 		}
     };
