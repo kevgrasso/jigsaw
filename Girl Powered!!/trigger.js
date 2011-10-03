@@ -142,7 +142,7 @@ TRIGGER = (function () {
             var i, context, triggerCopy,
             	args = Array.prototype.slice.call(arguments, 1);
             
-            if (typeof trigger === 'Object' && isValue(trigger)) {
+            if (typeof trigger === 'object' && isValue(trigger)) {
             	context = trigger.context;
             	trigger = trigger.name;
             }
