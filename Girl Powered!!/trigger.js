@@ -124,16 +124,30 @@ TRIGGER = (function () {
             
             return spec.func;
         },											
-        unsubscribe: function (trigger, func, trigId) { //todo: support unsubscribing from multiple triggers
-            var id = trigger+func.getid()+':'+trigId;
-			triggerlist[trigger].remove(entries[id]);
-			delete entries[id];
+        unsubscribe: function (trigger, func, trigId) {
+            var  i, id;
+            
+            if (!Array.isArray(trigger)) {
+            	trigger = [trigger];
+            }
+            
+            for (i=0; i<trigger.length; i+=1) {
+            	id = trigger+func.getid()+':'+trigId;
+            	triggerlist[trigger].remove(entries[id]);
+				delete entries[id];
+            }
         },
         
-        fireTrigger: function(trigger, context) {
-            var i, triggerCopy = triggerlist[trigger] && triggerlist[trigger].copy();
-            	args = Array.prototype.slice.call(arguments, 2);
-            	
+        fireTrigger: function(trigger) {
+            var i, context, triggerCopy,
+            	args = Array.prototype.slice.call(arguments, 1);
+            
+            if (typeof trigger === 'Object' && isValue(trigger)) {
+            	context = trigger.context;
+            	trigger = trigger.name;
+            }
+            
+            triggerCopy = triggerlist[trigger] && triggerlist[trigger].copy();
             if (!triggerCopy) {
             	return;
             }
