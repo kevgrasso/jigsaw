@@ -83,7 +83,7 @@ TRIGGER = (function () {
             }
             
 			for (i=0; i<spec.trigger.length; i+=1) {
-				id = spec.trigger[i]+spec.func.getid()+':'+spec.trigId;
+				id = spec.trigger[i]+spec.func.getid()+'#'+spec.trigId;
 	            if (!isValue(entries[id])) {
 					entries[id] = spec;
 					triggerlist[spec.trigger[i]].push(spec);
@@ -107,7 +107,7 @@ TRIGGER = (function () {
 	            if (isValue(spec.context)) {
 	            	if (typeof spec.context === 'string') {
 	            		temp = spec.context;
-	            		spec.context = { };
+	            		spec.context = {};
 	            		spec.context[temp] = true;
 	            	} else {
 		            	temp = spec.context.slice(0);
@@ -132,8 +132,8 @@ TRIGGER = (function () {
             }
             
             for (i=0; i<trigger.length; i+=1) {
-            	id = trigger+func.getid()+':'+trigId;
-            	triggerlist[trigger].remove(entries[id]);
+            	id = trigger[i]+func.getid()+'#'+trigId;
+            	triggerlist[trigger[i]].remove(entries[id]);
 				delete entries[id];
             }
         },
