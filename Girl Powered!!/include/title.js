@@ -286,7 +286,7 @@ INPUT.setKeys({
 				this.xVel -= this.stats[this.id].fightVel;
 			}
 		}),
-		ftLeft: INPUT.request({
+		ftLeftStop: INPUT.request({
 			input: 'leftUp',
 			context: 'global',
 			obj: player,
