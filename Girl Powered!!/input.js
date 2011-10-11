@@ -182,7 +182,7 @@ INPUT = (function () {
 			TRIGGER.subscribe(spec);
 		}
 	}
-	function keyboardClose(spec, trigger) { //FIXME: full inputs and holdcontextlist
+	function keyboardClose(spec, trigger) {
 		var keyname = keyinputlist[trigger],
 			keycode = keynames[keyname],
 			triglist = inputs[keycode].trigger,
@@ -197,7 +197,7 @@ INPUT = (function () {
 				}
 				
 				for (i=0; i<spec.context.length; i+=1) {
-					inputs[keycode].holdcontextlist[spec.context[i]] += 1;
+					inputs[keycode].holdcontextlist[spec.context[i]] -= 1;
 					if (inputs[keycode].holdcontextlist[spec.context[i]] <= 0) {
 						delete inputs[keycode].holdcontextlist[spec.context[i]];
 					}
@@ -205,12 +205,12 @@ INPUT = (function () {
 			}
 			
 			//unsubcribe function from trigger
-			TRIGGER.unsubscribe(trigger, spec.func);
+			TRIGGER.unsubscribe(trigger, spec.func, spec.trigId);
 			
 			triglist[trigger] -= 1;
 			if (triglist[trigger] <= 0) {
 				TRIGGER.removeTrigger(trigger);
-				delete trigdest[trigger];
+				delete triglist[trigger];
 			}	
 		}
 		
@@ -290,91 +290,119 @@ INPUT = (function () {
 		},
 		
 		request: function (spec) {
-			var input, i;
+			var input, i, j;
 			
 			if (spec.timer || isValue(spec.length)) { //sanity checking
 				throw new Error('input request includes timer');
 			}
 			
-			if (!Array.isArray(spec.input)) { //for multi-input arrays
-				spec.input = [spec.input];
-			} 
-			for (i=0; i<spec.input.length; i+=1) { 
-				if (keyinputlist[spec.input[i]]) { //determine input type
-					input = 'keyboard';
-				} else {
-					input = spec.input[i];
-				}
-				
-				if (!inputs[input]) { //initial request preparation -- inputs object, event listeners, and triggers
-					inputs[input] = {count: 1};
-					
-					switch(input) {
-					case 'keyboard':
-						document.addEventListener('keydown', downhandle, false);
-						document.addEventListener('keyup', uphandle, false);
-						break;
-					default:
-						TRIGGER.addTrigger(input);
-						inputs[input].func = function (e) {
-					        e.preventDefault();
-					        e.stopImmediatePropagation();
-					        this.timeSince[input] = 0;
-					        
-					        TRIGGER.fireTrigger(input, e);
-						};
-						document.addEventListener(input, inputs[input].func, false);
-					}
-				} else {
-					inputs[input].count += 1;
-				}
-				
-				spec.trigger = spec.input[i]; //prep spec.trigger for subscription
-				switch(input) { //handle triggers
-				case 'keyboard':
-					keyboardRequest(spec, spec.input[i]);
-					break;
-				default:
-					TRIGGER.subscribe(spec);
-				}
+			if (!Array.isArray(spec)) { //for multi-spec arrays
+				spec = [spec];
 			}
 			
-			return spec.func;
+			for (i=0; i<spec.length; i+=1) {  
+				
+				if (!Array.isArray(spec[i].input)) { //for multi-input arrays
+					spec[i].input = [spec[i].input];
+				} 
+				
+				for (j=0; j<spec[i].input.length; j+=1) { 
+					if (keyinputlist[spec[i].input[j]]) { //determine input type
+						input = 'keyboard';
+					} else {
+						input = spec[i].input[j];
+					}
+					
+					if (!inputs[input]) { //initial request preparation -- inputs object, event listeners, and triggers
+						inputs[input] = {count: 1};
+						
+						switch(input) {
+						case 'keyboard':
+							document.addEventListener('keydown', downhandle, false);
+							document.addEventListener('keyup', uphandle, false);
+							break;
+						default:
+							TRIGGER.addTrigger(input);
+							inputs[input].func = function (e) {
+						        e.preventDefault();
+						        e.stopImmediatePropagation();
+						        this.timeSince[input] = 0;
+						        
+						        TRIGGER.fireTrigger(input, e);
+							};
+							document.addEventListener(input, inputs[input].func, false);
+						}
+					} else {
+						inputs[input].count += 1;
+					}
+					
+					spec[i].trigger = spec[i].input[j]; //prep spec.trigger for subscription
+					switch(input) { //handle triggers
+					case 'keyboard':
+						keyboardRequest(spec[i], spec[i].input[j]);
+						break;
+					default:
+						TRIGGER.subscribe(spec[i]);
+					}
+				}
+				
+				if (spec[i].func) {
+					if (!spec[i].func.inputs) {
+						spec[i].func.inputs = [spec[i]];
+					} else {
+						spec[i].func.inputs.push(spec[i]);
+					}
+				}
+			}
+			if (spec.length === 1) {
+				return spec[0].func || spec[0];
+			} else {
+				return spec;
+			}
 		},
 		
 		close: function (spec) {
-			var input;
+			var input, i, j;
 			
-			if (!Array.isArray(spec.input)) { //for multi-input arrays
-				spec.input = [spec.input];
+			if (typeof spec === 'function') { //retrieve specs from function
+				spec = spec.func.inputs;
+			} else if (!Array.isArray(spec)) { //for multi-spec arrays
+				spec = [spec];
 			} 
-			for (i=0; i<spec.input.length; i+=1) { 
-				if (keyinputlist[spec.input[i]]) { //determine input type
-					input = 'keyboard';
-				} else {
-					input = spec.input[i];
-				}
 			
-				switch(input) { //handle triggers
-				case 'keyboard':
-					keyboardClose(spec, spec.input[i]);
-					break;
-				default:
-					TRIGGER.unsubscribe(spec.input[i], spec.func);
-				}
+			for (i=0; i<spec.length; i+=1) {
+				if (!Array.isArray(spec.input)) { //for multi-input arrays
+					spec[i].input = [spec[i].input];
+				} 
 				
-				inputs[input].count -= 1;
-				if (inputs[input] === 0) { //if no remaining events, cleanup
-					delete inputs[input];
-					
-					switch(input) {
+				for (j=0; j<spec[i].input.length; j+=1) {
+					if (keyinputlist[spec[i].input[j]]) { //determine input type
+						input = 'keyboard';
+					} else {
+						input = spec[i].input[j];
+					}
+				
+					switch(input) { //handle triggers
 					case 'keyboard':
-						document.removeEventListener('keydown', downhandle, false);
-						document.removeEventListener('keyup', uphandle, false);
+						keyboardClose(spec[i], spec[i].input[j]);
 						break;
 					default:
-						TRIGGER.removeTrigger(input);
-						document.removeEventListener(input, inputs[input].func, false);
+						TRIGGER.unsubscribe(spec[i].input[j], spec[i].func);
+					}
+					
+					inputs[input].count -= 1;
+					if (inputs[input] === 0) { //if no remaining events, cleanup
+						delete inputs[input];
+						
+						switch(input) {
+						case 'keyboard':
+							document.removeEventListener('keydown', downhandle, false);
+							document.removeEventListener('keyup', uphandle, false);
+							break;
+						default:
+							TRIGGER.removeTrigger(input);
+							document.removeEventListener(input, inputs[input].func, false);
+						}
 					}
 				}
 			}
