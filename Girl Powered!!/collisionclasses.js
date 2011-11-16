@@ -44,11 +44,11 @@
 		//we can do fewer tests if we're testing a list against itself
 		if (list2) {
 			//test every shape in list1 against every shape in list2
-			for (i = 0; i+1 < list1.length; i += 1) {
-				shape1 = list1[i];
+			for (i = 0; i < list1.length; i += 1) {
+				shape1 = list1[i].data;
 				
 				for (j = i; j < list2.length; j += 1) {
-					shape2 = list2[j];
+					shape2 = list2[j].data;
 					
 					if (!swapped) {
 						testShapes(shape1, shape2, func, checklist);
@@ -60,11 +60,11 @@
 			
 		} else {
 			//test every possible combination of shapes
-			for (i = head1; i !== null; i = i.next) {
-				shape1 = k.data;
+			for (i = 0; i+1 < list1.length; i += 1) {
+				shape1 = list1[i].data;
 				
-				for (j = head2; j !== null; j = j.next) {
-					shape2 = l.data;
+				for (j = i; j < list1.length; j += 1) {
+					shape2 = list1[j].data;
 					
 					if (!swapped) {
 						testShapes(shape1, shape2, func, checklist);
@@ -97,24 +97,16 @@
 					cell = grid.pools[pool][i];
 					
 					if (typeof group1 === 'string') {
-						list1 = [];
-						head = cell.shapes[pool];
-						for (j = head; j.next !== null; j = j.next) {
-							list1.push = j.data;
-						}
+						list1 = cell.shapes[group1];
 					} else {
-						list1 = group1;
+						list1 = [{data: group1}];
 					}
 					
-					if (group2) {
+					if (group2 && group1 !== group2) {
 						if (typeof group2 === 'string') {
-							list2 = [];
-							head = cell.shapes[pool];
-							for (j = head; j.next !== null; j = j.next) {
-								list2.push = j.data;
-							}
+							list2 = cell.shapes[group2];
 						} else {
-							list2 = group2;
+							list2 = [{data: group2}];
 						}
 						
 						if (list1.length <= list2.length) {
@@ -135,9 +127,9 @@
 	}
 	
 	CollisionCell = Cell.makeClass(function () {
-		this.shapes = { };
-		this.shapelist = { };
-		
+		this.shapes = {};
+		this.shapelist = {};
+
 		Cell.apply(this, arguments);
 	}, {
 		
@@ -153,15 +145,18 @@
 					pool = shape.pool;
 					id = shape.getid();
 					
-					if (this.shapelist[id]) {
-						node = this.shapelist[id];
+					if (isValue(this.shapelist[id])) {
+						node = this.shapes[pool][this.shapelist[id]];
 						node.num += 1;
 					} else {
-						node = new LinkNode(shape, this.shapes[pool]);
-						node.num = 1;
-						
-						this.shapes[pool] = node;
-						this.shapelist[id] = node;
+						node = {data: shape, num: 1}
+						if (!this.shapes[pool]) {
+							this.shapes[pool] = [node];
+							this.shapelist[id] = 0;
+						} else {
+							this.shapelist[id] = this.shapes[pool].push(node)-1; 
+							//Array::push returns new length of Array 
+						}
 						
 						if (!this.grid.pools[pool]) {
 							this.grid.pools[pool] = { };
@@ -180,24 +175,20 @@
 		},
 		
 		deregister: function (obj) {
-			var i, shape, pool, id, node;
+			var i, shape, shapePos, pool, id, node;
 			
 			for (i in obj.shapes) {
 				if (obj.shapes.hasOwnProperty(i)) {
 					shape = obj.shapes[i];
-					pool = shape.pool;
 					id = shape.getid();
-					
-					node = this.shapelist[id];
+					pool = shape.pool;
+					shapePos = this.shapelist[id];
+					node = this.shapes[pool][shapePos];
 					
 					if (node.num > 1) {
 						node.num -= 1;
 					} else {
-						if (node === this.shapes[pool]) {
-							this.shapes[pool] = node.deconstructor();
-						} else {
-							node.deconstructor();
-						}
+						this.shapes[pool].splice(shapePos, 1);
 						delete this.shapelist[id];
 						
 						this.grid.poolcount[pool][this.getid()] -= 1;
@@ -217,15 +208,23 @@
 		}
 	});
 	
-	CollisionGrid = Grid.makeClass(function () {
+	CollisionGrid = Grid.makeClass(function (spec) {
 		//TODO: subgrids
 		
 		this.pools = { };
 		this.poolcount = { };
 		
 		this.collisions = [];
+		
+		if (isValue(spec.context) || isValue(spec.priority)) {
+			if (!isValue(spec.context) || !isValue(spec.priority)) {
+				throw new Error ('CollsionCell not given context AND priority');
+			}
+			
+			this.subscribeTo(spec.context, spec.priority, spec.trigId);
+		}
 	
-		return Grid.apply(this, arguments);
+		return Grid.call(this, spec);
 	}, {
 		cell: CollisionCell,
 		
@@ -235,6 +234,21 @@
 		poolcount: null,
 		
 		collisions: null,
+		
+		subscribeTo: function (context, priority, trigId) {
+			TRIGGER.subscribe({
+				trigger: 'step',
+				func: this.step,
+				obj: this,
+				context: context,
+				priority: priority,
+				trigId: trigId
+			});
+		},
+		
+		unsubscribeFrom: function (trigId) {
+			TRIGGER.unsubscribe('step', this.step, trigId);
+		},
 		
 		addCollision: function (pool1, pool2, func) {
 			this.collisions.push({
@@ -258,7 +272,7 @@
 			
 			return collisionList;
 		},
-		test: function () {
+		step: function () {
 			var i, //iterator
 				pool1, pool2, func; //data from collisions array
 			
@@ -329,29 +343,29 @@
 	
 	function getAttrib(shape) {
 		var value = { },
-			xOffset = shape.parent.x, yOffset = shape.parent.y;
+			xOffset = shape.parent.pos.getX(), yOffset = shape.parent.pos.getY();
 		
 		switch (shape.type) {
 		case 'box':
-			value.top    = yOffset + shape.y;
-			value.bottom = yOffset + shape.y + shape.height;
-			value.left   = xOffset + shape.x;
-			value.right  = xOffset + shape.x + shape.width;
+			value.top    = yOffset + shape.pos.getY();
+			value.bottom = yOffset + shape.pos.getY() + shape.height;
+			value.left   = xOffset + shape.pos.getX();
+			value.right  = xOffset + shape.pos.getX() + shape.width;
 			break;
 		case 'circle':
-			value.x      = xOffset + shape.x;
-			value.y      = yOffset + shape.y;
+			value.x      = xOffset + shape.pos.getX();
+			value.y      = yOffset + shape.pos.getY();
 			value.radius = shape.radius;
 			break;
 		case 'line':
-			value.x1 	 = xOffset + shape.x;
-			value.y1 	 = yOffset + shape.y;
+			value.x1 	 = xOffset + shape.pos.getX();
+			value.y1 	 = yOffset + shape.pos.getY();
 			value.x2 	 = xOffset + shape.endx;
 			value.y2 	 = yOffset + shape.endy;
 			break;
 		case 'point':
-			value.x  	 = xOffset + shape.x;
-			value.y 	 = yOffset + shape.y;
+			value.x  	 = xOffset + shape.pos.getX();
+			value.y 	 = yOffset + shape.pos.getY();
 			break;
 		}
 		
@@ -362,21 +376,16 @@
 		this.parent = spec.parent;
 		this.pool = spec.pool;
 		
-		this.x = spec.x;
-		this.y = spec.y;
+		this.pos = spec.pos;
 	}, {
 		parent: null,
 		type: null,
 		pool: null,
 		
-		x: 0,
-		y: 0,
+		pos: null,
 		
-		getX: function () {
-			return this.parent ? this.parent.x+this.x : this.x;
-		},
-		getY: function () {
-			return this.parent ? this.parent.y+this.y : this.y;
+		getPos: function () {
+			return this.parent ? this.parent.pos.add(this.pos) : this.pos;
 		},
 		
 		isColliding: function (otherShape) { 
@@ -427,6 +436,16 @@
 			}
 		}
 	});
+	Shape.create = function (spec) {
+		switch (spec.type) {
+		case 'box':
+			return new Box(spec);
+			break;
+		case 'circle':
+			return new Circle(spec);
+			break;
+		}
+	}
 	
 	Box = Shape.makeClass(function (spec) {
 		Shape.call(this, spec);
@@ -441,16 +460,16 @@
 		width: 0,
 		
 		getTop: function () {
-			return this.getY()-(this.height/2);
+			return this.getPos().getY()-(this.height/2);
 		},
 		getBottom: function () {
-			return this.getY()+(this.height/2);
+			return this.getPos().getY()+(this.height/2);
 		},
 		getLeft: function () {
-			return this.getX()-(this.width/2);
+			return this.getPos().getX()-(this.width/2);
 		},
 		getRight: function () {
-			return this.getX()+(this.width/2);
+			return this.getPos().getX()+(this.width/2);
 		}
 	});
 	
@@ -458,8 +477,7 @@
 		Shape.call(this, spec);
 		this.boundaryBox = new Box({ 
 			pool: this.pool,
-			x: this.relx,
-			y: this.rely,
+			pos: this.getPos(),
 			height: this.radius,
 			width: this.radius
 		});
@@ -470,34 +488,4 @@
 		
 		radius: 0
 	});
-	
-	Line = Shape.makeClass(function (spec) {
-		Shape.call(this, spec);
-		this.boundaryBox = {
-			pool: this.pool,
-			x: (this.x+endx)/2,
-			y: (this.y+endy)/2,
-			height: Math.abs(endx),
-			width: Math.abs(endy)
-		};
-		
-		this.endx = spec.endx;
-		this.endy = spec.endy;
-	}, {
-		type: 'line',
-		
-		endx: 0,
-		endy: 0
-	});
-	
-	Point = Shape.makeClass(function (spec) {
-		Shape.call(this, spec);
-		this.boundaryBox = {
-			pool: this.pool,
-			x: this.x,
-			y: this.y,
-			height: 0,
-			width: 0
-		};
-	}, {type: 'point'});
 }());

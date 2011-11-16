@@ -60,11 +60,11 @@ INPUT = (function () {
 						trigger: 'step',
 						context: i,
 						trigId: count,
-						priority: -Infinity,
+						func: holdhandle,
 						autoArgs: [keyname, i],
+						priority: -Infinity,
 						timerType: 'timeout',
-						timerLength: interval,
-						func: holdhandle
+						timerLength: interval
 					});
 					count += 1;
 				}

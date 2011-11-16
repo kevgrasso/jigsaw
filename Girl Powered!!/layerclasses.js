@@ -8,25 +8,28 @@
 		}
 		
 		if (spec.viewport) {
-			this.activate(spec.viewport);
+			if (spec.viewport === true) {
+				delete spec.viewport;
+			}
+			this.subscribeTo(spec.viewport);
 		}
 	}, {
 		
 		viewport: null,
 		z: 0,
 		
-		activate: function (viewport) {
+		subscribeTo: function (viewport) {
 			if (this.viewport) {
 				this.deactivate();
 			}
 			viewport = viewport || VIEWPORT;
 			
 			this.viewport = viewport;
-			viewport.addImage(this);
+			viewport.subscribe(this);
 		},
 		
-		deactivate: function () {
-			this.viewport.removeImage(this);
+		unsubscribeFrom: function () {
+			this.viewport.unsubscribe(this);
 			this.viewport = null;
 		},
 			
@@ -38,30 +41,23 @@
 		
 		this.parent = spec.parent;
 		
-		this.x = spec.x;
-		this.y = spec.y;
+		this.pos = spec.pos;
 	}, {
 		parent: null,
 		
-		x: 0,
-		y: 0,
+		pos: null,
 		
-		getX: function () {
-			return this.parent ? this.parent.x+this.x : this.x;
+		getAbsPos: function () {
+			return this.parent ? this.parent=this.parent.pos.add(this.pos) : this.pos;
 		},
-		getY: function () {
-			return this.parent ? this.parent.y+this.y : this.y;
-		}
 	});
 
 	MetaLayer = Layer.makeClass(function (spec) {
 		Layer.call(this, spec);
 		
-		this.x = spec.x;
-		this.y = spec.y;
+		this.pos = spec.pos;
 		
-		this.viewx = spec.viewx;
-		this.viewy = spec.viewy;
+		this.viewpos = spec.viewpos;
 		
 		this.height = spec.height;
 		this.width = spec.width;
@@ -77,11 +73,8 @@
 		}
 		
 	}, {
-	x: 0,
-	y: 0,
-	
-    viewx: 0,
-    viewy: 0,
+	pos: null,
+    viewpos: null,
     
     canvas: null,	//2d drawing context goes here
     width: 0,
@@ -90,12 +83,12 @@
     images: null,
 	imagelist: null,
     
-    addImage: function (image) {
+    subscribe: function (image) {
         this.images.push(image);
 		this.imglist[image.getid()] = image;
     },
     
-    removeImage: function (image) {
+    unsubscribe: function (image) {
 		this.images.remove(this.imglist[image.getid()]);
 		delete this.imglist[image.getid()];
     },

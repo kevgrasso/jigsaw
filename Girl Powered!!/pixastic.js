@@ -22,7 +22,7 @@ var Pixastic = (function() {
 				handlerDone = true;
 				handler();
 			}
-		}
+		};
 		document.write("<"+"script defer src=\"//:\" id=\"__onload_ie_pixastic__\"></"+"script>");
 		var script = document.getElementById("__onload_ie_pixastic__");
 		script.onreadystatechange = function() {
@@ -30,7 +30,7 @@ var Pixastic = (function() {
 				script.parentNode.removeChild(script);
 				execHandler();
 			}
-		}
+		};
 		if (document.addEventListener)
 			document.addEventListener("DOMContentLoaded", execHandler, false); 
 		addEvent(window, "load", execHandler);
@@ -67,11 +67,11 @@ var Pixastic = (function() {
 					} else {
 						dataImg.onload = function() {
 							for (var a=0;a<actions.length;a++) {
-								var res = Pixastic.applyAction(el, el, actions[a], null)
+								var res = Pixastic.applyAction(el, el, actions[a], null);
 								if (res) 
 									el = res;
 							}
-						}
+						};
 					}
 				} else {
 					setTimeout(function() {
@@ -145,7 +145,7 @@ var Pixastic = (function() {
 		} catch(e) {}
 		return function() {
 			return val;
-		}
+		};
 	})();
 
 	var hasCanvasImageData = (function() {
@@ -159,7 +159,7 @@ var Pixastic = (function() {
 		} catch(e) {}
 		return function() {
 			return val;
-		}
+		};
 	})();
 
 	var hasGlobalAlpha = (function() {
@@ -185,7 +185,7 @@ var Pixastic = (function() {
 		}
 		return function() {
 			return hasAlpha;
-		}
+		};
 	})();
 
 
@@ -259,7 +259,7 @@ var Pixastic = (function() {
 									top : parseInt(rectVal[1],10)||0,
 									width : parseInt(rectVal[2],10)||0,
 									height : parseInt(rectVal[3],10)||0
-								}
+								};
 							} else {
 								options[thisArg[0]] = thisArg[1];
 							}
@@ -324,7 +324,7 @@ var Pixastic = (function() {
 				height : h,
 				useData : true,
 				options : options
-			}
+			};
 
 			// Ok, let's do it!
 
@@ -389,9 +389,9 @@ var Pixastic = (function() {
 					return res;
 				} else {
 					dataImg.onload = function() {
-						var res = Pixastic.applyAction(img, dataImg, actionName, options)
+						var res = Pixastic.applyAction(img, dataImg, actionName, options);
 						if (callback) callback(res);
-					}
+					};
 				}
 			}
 			if (img.tagName.toLowerCase() == "canvas") {
@@ -430,7 +430,7 @@ var Pixastic = (function() {
 		},
 
 		Actions : {}
-	}
+	};
 
 
 })();
@@ -735,7 +735,7 @@ Pixastic.Actions.blend = {
 				case "linearlight" : 
 					while (p--) {
 						if ( ((r3 = 2*(r2=data2[pix-=4])+data[pix]-256) < 0) || (r2 < 128 && r3 < 0)) {
-							data2[pix] = 0
+							data2[pix] = 0;
 						} else {
 							if (r3 > 255)
 								data2[pix] = 255;
@@ -743,7 +743,7 @@ Pixastic.Actions.blend = {
 								data2[pix] = r3;
 						}
 						if ( ((g3 = 2*(g2=data2[pix1=pix+1])+data[pix1]-256) < 0) || (g2 < 128 && g3 < 0)) {
-							data2[pix1] = 0
+							data2[pix1] = 0;
 						} else {
 							if (g3 > 255)
 								data2[pix1] = 255;
@@ -751,7 +751,7 @@ Pixastic.Actions.blend = {
 								data2[pix1] = g3;
 						}
 						if ( ((b3 = 2*(b2=data2[pix2=pix+2])+data[pix2]-256) < 0) || (b2 < 128 && b3 < 0)) {
-							data2[pix2] = 0
+							data2[pix2] = 0;
 						} else {
 							if (b3 > 255)
 								data2[pix2] = 255;
@@ -769,7 +769,7 @@ Pixastic.Actions.blend = {
 								if ((r3 = 255 - ((255-data[pix])<<8) / (2*r2)) < 0) 
 									data2[pix] = 0;
 								else
-									data2[pix] = r3
+									data2[pix] = r3;
 							} else {
 								data2[pix] = 0;
 							}
@@ -782,7 +782,7 @@ Pixastic.Actions.blend = {
 							if (r3 < 0) 
 								data2[pix] = 0;
 							else
-								data2[pix] = r3
+								data2[pix] = r3;
 						}
 
 						if ((g2=data2[pix1=pix+1]) < 128) {
@@ -941,7 +941,7 @@ Pixastic.Actions.blend = {
 	checkSupport : function() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
-}/*
+};/*
  * Pixastic Lib - Blur filter - v0.1.0
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * License: [http://www.pixastic.com/lib/license.txt]
@@ -955,7 +955,7 @@ Pixastic.Actions.blur = {
 
 		if (Pixastic.Client.hasCanvasImageData()) {
 			var data = Pixastic.prepareData(params);
-			var dataCopy = Pixastic.prepareData(params, true)
+			var dataCopy = Pixastic.prepareData(params, true);
 
 			/*
 			var kernel = [
@@ -1066,7 +1066,7 @@ Pixastic.Actions.blur = {
 	checkSupport : function() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
-}/*
+};/*
  * Pixastic Lib - Blur Fast - v0.1.1
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * License: [http://www.pixastic.com/lib/license.txt]
@@ -1142,7 +1142,7 @@ Pixastic.Actions.blurfast = {
 	checkSupport : function() {
 		return (Pixastic.Client.hasCanvas() || Pixastic.Client.isIE());
 	}
-}
+};
 /*
  * Pixastic Lib - Brightness/Contrast filter - v0.1.1
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
@@ -1220,7 +1220,7 @@ Pixastic.Actions.brightness = {
 	checkSupport : function() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
-}
+};
 
 /*
  * Pixastic Lib - Color adjust filter - v0.1.1
@@ -1283,7 +1283,7 @@ Pixastic.Actions.coloradjust = {
 	checkSupport : function() {
 		return (Pixastic.Client.hasCanvasImageData());
 	}
-}
+};
 /*
  * Pixastic Lib - Histogram - v0.1.0
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
@@ -1296,7 +1296,7 @@ Pixastic.Actions.colorhistogram = {
 	array256 : function(default_value) {
 		arr = [];
 		for (var i=0; i<256; i++) { arr[i] = default_value; }
-		return arr
+		return arr;
 	},
  
 	process : function(params) {
@@ -1365,7 +1365,7 @@ Pixastic.Actions.colorhistogram = {
 	checkSupport : function() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
-}/*
+};/*
  * Pixastic Lib - Crop - v0.1.1
  * Copyright (c) 2008-2009 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * License: [http://www.pixastic.com/lib/license.txt]
@@ -1425,7 +1425,7 @@ Pixastic.Actions.crop = {
 	checkSupport : function() {
 		return Pixastic.Client.hasCanvas();
 	}
-}
+};
 
 
 /*
@@ -1450,7 +1450,7 @@ Pixastic.Actions.desaturate = {
 
 			if (useAverage) {
 				while (p--) 
-					data[pix-=4] = data[pix1=pix+1] = data[pix2=pix+2] = (data[pix]+data[pix1]+data[pix2])/3
+					data[pix-=4] = data[pix1=pix+1] = data[pix2=pix+2] = (data[pix]+data[pix1]+data[pix2])/3;
 			} else {
 				while (p--)
 					data[pix-=4] = data[pix1=pix+1] = data[pix2=pix+2] = (data[pix]*0.3 + data[pix1]*0.59 + data[pix2]*0.11);
@@ -1464,7 +1464,7 @@ Pixastic.Actions.desaturate = {
 	checkSupport : function() {
 		return (Pixastic.Client.hasCanvasImageData() || Pixastic.Client.isIE());
 	}
-}/*
+};/*
  * Pixastic Lib - Edge detection filter - v0.1.1
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * License: [http://www.pixastic.com/lib/license.txt]
@@ -1478,7 +1478,7 @@ Pixastic.Actions.edges = {
 
 		if (Pixastic.Client.hasCanvasImageData()) {
 			var data = Pixastic.prepareData(params);
-			var dataCopy = Pixastic.prepareData(params, true)
+			var dataCopy = Pixastic.prepareData(params, true);
 
 			var c = -1/8;
 			var kernel = [
@@ -1578,7 +1578,7 @@ Pixastic.Actions.edges = {
 	checkSupport : function() {
 		return Pixastic.Client.hasCanvasImageData();
 	}
-}/*
+};/*
  * Pixastic Lib - Edge detection 2 - v0.1.0
  * Copyright (c) 2008 Jacob Seidelin, jseidelin@nihilogic.dk, http://blog.nihilogic.dk/
  * License: [http://www.pixastic.com/lib/license.txt]
@@ -1833,10 +1833,10 @@ Pixastic.Actions.flip = {
 
 		if (params.options.axis == "horizontal") {
 			ctx.scale(-1,1);
-			ctx.drawImage(copyCanvas, -rect.left-rect.width, rect.top, rect.width, rect.height)
+			ctx.drawImage(copyCanvas, -rect.left-rect.width, rect.top, rect.width, rect.height);
 		} else {
 			ctx.scale(1,-1);
-			ctx.drawImage(copyCanvas, rect.left, -rect.top-rect.height, rect.width, rect.height)
+			ctx.drawImage(copyCanvas, rect.left, -rect.top-rect.height, rect.width, rect.height);
 		}
 
 		params.useData = false;
@@ -1879,7 +1879,7 @@ Pixastic.Actions.fliph = {
 	checkSupport : function() {
 		return (Pixastic.Client.hasCanvas() || Pixastic.Client.isIE());
 	}
-}
+};
 
 /*
  * Pixastic Lib - Vertical flip - v0.1.0

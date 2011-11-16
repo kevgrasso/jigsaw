@@ -107,7 +107,7 @@ INPUT.setKeys({
 });
 
 (function () {
-	var that = include.targets.title.pop(),
+	var that = {},
 		player, bgcolor, debug,
 		test, mapDisplay,
 		solids, stats;
@@ -121,8 +121,8 @@ INPUT.setKeys({
 		c.fillStyle = 'white';
 		c.font = '12pt Arial';
 		
-		c.fillText('X:'+player.x, 0, 20);
-		c.fillText('Y:'+player.y,0, 40);
+		c.fillText('X:'+player.pos.getX(), 0, 20);
+		c.fillText('Y:'+player.pos.getY(),0, 40);
 		c.fillText('X:'+player.x1, 200, 20);
 		c.fillText('Y:'+player.y1, 200, 40);
 		c.fillText('X:'+player.grid.getcx(player.x1), 400, 20);
@@ -136,12 +136,19 @@ INPUT.setKeys({
 		}
 	}, viewport: VIEWPORT, z:100 });
 	
-	grid = new CollisionGrid(740, 500, 120, 125);
+	grid = new CollisionGrid({
+		gridw: 740,
+		gridh: 500,
+		cellw: 120,
+		cellh:125,
+		
+		context: 'global',
+		priority: 85
+	});
 	
 	player = new Actor({
 		grid: grid,
-		x: 400,
-		y: 330,
+		pos: $V([400, 140]),
 		z: 1,
 		
 		top: -140,
@@ -150,29 +157,26 @@ INPUT.setKeys({
 		right: 20,
 		
 		sprites:{ square: {
-			x: -20,
-			y: -80,
+			pos: $V([-20, -80]),
 			viewport: VIEWPORT,
 			draw: function (c, viewX, viewY, count) {
-				c.translate(this.parent.x, this.parent.y);
+				c.translate(this.parent.pos.getX(), this.parent.pos.getY());
 				c.fillStyle = 'white';
-				c.fillRect(this.x, this.y, 30, 80);
+				c.fillRect(this.pos.getX(), this.pos.getY(), 30, 80);
 			}
 		} },
 		
 		shapes:{ bulk: {
 			type: 'box',
 			pool: 'global',
-			x: -20,
-			y: -150,
+			pos: $V([-20, -150]),
 			width: 40,
 			height: 150
 		} }
 	});
 	extend(player, {
 		id: 'jess',
-		xVel: 0,
-		yVel: 0,
+		velocity: Vector.Zero(2),
 		jumpState: 'walk',
 		dashState: 'ready',
 		stats: {
@@ -268,50 +272,50 @@ INPUT.setKeys({
 			trigger: 'step',
 			context: 'global',
 			obj: player,
-			priority: 50,
 			func: function () {
 				that.collide = false;
 				
-				this.moveQueue.pushRel(this.xVel, null);
+				this.moveQueue.pushRel(this.velocity.dup(), null);
 				
 				return this.move();
-			}
+			},
+			priority: 50
 		}),
 		ftLeft: INPUT.request({
 			input: 'leftHold',
 			context: 'global',
 			obj: player,
-			priority: 50,
 			func: function () {
-				this.xVel -= this.stats[this.id].fightVel;
-			}
+				this.velocity = this.velocity.subtract($V([this.stats[this.id].fightVel,0]));
+			},
+			priority: 50
 		}),
 		ftLeftStop: INPUT.request({
 			input: 'leftUp',
 			context: 'global',
 			obj: player,
-			priority: 50,
 			func: function () {
-				this.xVel += this.stats[this.id].fightVel;
-			}
+				this.velocity = this.velocity.add($V([this.stats[this.id].fightVel,0]));
+			},
+			priority: 50
 		}),
 		ftRight: INPUT.request({
 			input: 'rightHold',
 			context: 'global',
 			obj: player,
-			priority: 50,
 			func: function () {
-				this.xVel += this.stats[this.id].fightVel;
-			}
+				this.velocity = this.velocity.add($V([this.stats[this.id].fightVel,0]));
+			},
+			priority: 50
 		}),
 		ftRightStop: INPUT.request({
 			input: 'rightUp',
 			context: 'global',
 			obj: player, 
-			priority: 50,
 			func: function () {
-				this.xVel -= this.stats[this.id].fightVel;
-			}
+				this.velocity = this.velocity.subtract($V([this.stats[this.id].fightVel,0]));
+			},
+			priority: 50
 		}),
 			
 	});
@@ -320,26 +324,23 @@ INPUT.setKeys({
 	
 	
 	test = new Actor({
-		x: 150,
-		y: 160,
+		pos: $V([150, 100]),
 		
 		grid: grid,
 		
 		sprites: { square: {
-			x: -6,
-			y: -40,
+			pos: $V([0, 0]),
 			viewport: VIEWPORT,
 			draw: function (c, viewX, viewY, count) {
-				c.translate(this.parent.x, this.parent.y);
+				c.translate(this.parent.pos.getX(), this.parent.pos.getY());
 				c.fillStyle = 'white';
-				c.fillRect(this.x, this.y, 40, 12);
+				c.fillRect(this.pos.getX(), this.pos.getY(), 100, 20);
 			}
 		} },
 		shapes:{ wall: {
 			type: 'box',
 			pool: 'global',
-			x: -50,
-			y: -10,
+			pos: $V([50, 10]),
 			width: 100,
 			height: 20
 		} },
@@ -355,8 +356,7 @@ INPUT.setKeys({
 	};
 	
 //	that.rope = {
-//		x: 0,
-//		y: 0,
+//		pos: $V([0, 0]),
 //		
 //		length: 0,
 //		mass: 0,

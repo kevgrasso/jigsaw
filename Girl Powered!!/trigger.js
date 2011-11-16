@@ -19,7 +19,7 @@ TRIGGER = (function () {
 						entry.timerCount = entry.timerLength;
 					} else if (entry.timerCount <= 0) { //timeout code
 						TRIGGER.unsubscribe(trigger, entry.func, entry.trigId);
-					} 
+					}
 				}
 				
 				//call the function. if there is an object specified, make it the thisobj

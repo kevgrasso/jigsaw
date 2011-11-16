@@ -55,12 +55,12 @@ Matrix.Shear = function (n, x, y) {
  S[0][1] = y;
  S[1][0] = x;
  return S;
-}
+};
 
 Matrix.prototype.scale = function () {
-	return this.multiply(Matrix.Scale.apply(null, Array.prototype.arguments));
-}
+	return this.multiply(Matrix.Scale.apply(null, [this.elements.length].concat(Array.prototype.slice.call(arguments))));
+};
 
 Matrix.prototype.shear = function (x, y) {
 	return this.multiply(Matrix.Shear(this.elements.length, x, y));
-}
+};

@@ -26,22 +26,21 @@
 		}
 	});
 
-	Grid = makeClass(function (gridw, gridh, cellw, cellh, cell) {
+	Grid = makeClass(function (spec) {
 		var i, j;
 		
-		cell = cell || this.cell;
-		this.cell = cell;
+		this.cell = spec.cell = spec.cell || this.cell;
 		
-		this.gridw = gridw;
-		this.gridh = gridh;
+		this.gridw = spec.gridw;
+		this.gridh = spec.gridh;
 		
-		this.cellw = cellw;
-		this.cellh = cellh;
+		this.cellw = spec.cellw;
+		this.cellh = spec.cellh;
 		
-		for (i = 0; i < gridw/cellw; i += 1) {
+		for (i = 0; i < this.gridw/this.cellw; i += 1) {
 			this[i] = [];
-			for (j = 0; j < gridh/cellh; j += 1) {
-				this[i][j] = new cell(this, i, j);
+			for (j = 0; j < this.gridh/this.cellh; j += 1) {
+				this[i][j] = new this.cell(this, i, j);
 			}
 		}
 		
@@ -89,8 +88,7 @@
 	Actor = makeClass(function (spec) {
 		var i;
 		
-		this.x = spec.x;
-		this.y = spec.y;
+		this.pos = spec.pos || Vector.Zero(2);
 		
 		this.sprites = { };
 		if (spec.sprites) {
@@ -106,7 +104,7 @@
 			for (i in spec.shapes) {
 				if (spec.shapes.hasOwnProperty(i)) {
 					spec.shapes[i].parent = this;
-					this.shapes[i] = new Shape(spec.shapes[i]);
+					this.shapes[i] = Shape.create(spec.shapes[i]);
 				}
 			}
 		}
@@ -115,15 +113,12 @@
 			this.grid = spec.grid;
 		}
 		
-		this.moveQueue = extend([ ], {
-			pushRel: function (x, y) {
-				this.push({relx: x, rely: y});
+		this.moveQueue = extend([], {
+			pushRel: function (vector) {
+				this.push({rel: vector});
 			},
-			pushAbs: function (x, y) {
-				this.push({absx: x, absy: y});
-			},
-			pushAng: function (angle, dist) {
-				this.push({angle: angle, dist: dist});
+			pushAbs: function (vector) {
+				this.push({abs: vector});
 			}
 		});
 		
@@ -141,13 +136,9 @@
 		shapes: null,
 		grid: null,
 		
-		x: 0,
-		y: 0,
+		pos: null,
 		
-		relx: 0,
-		rely: 0,
-		angle: 0,
-		dist: 0,
+		lastMove: null,
 		
 		//relative location of dimensions
 		top: 0,
@@ -162,6 +153,7 @@
 		y2: 0,	//bottom
 		
 		//cells which contain the corners of the entity
+		cells: null,
 		celltl: null,
 		celltr: null,
 		cellbl: null,
@@ -173,10 +165,10 @@
 				gridx1, gridx2, gridy1, gridy2;
 			
 			//calculate edges
-			this.x1 = this.left + this.x;
-			this.y1 = this.top + this.y;
-			this.x2 = this.right + this.x;
-			this.y2 = this.bottom + this.y;
+			this.x1 = this.left + this.pos.elements[0];
+			this.y1 = this.top + this.pos.elements[1];
+			this.x2 = this.right + this.pos.elements[0];
+			this.y2 = this.bottom + this.pos.elements[1];
 			
 			if (this.grid) {
 				//match each edge to a row or column on the grid
@@ -239,48 +231,32 @@
 		},
 		
 		getMove: function (emptyQueue) {
-			var value = {}, i, bufx = 0, bufy = 0;
+			var i, buffer = Vector.Zero(2);
 			
 			
 			this.moveQueue.reverse();
 			for (i = this.moveQueue.pop(); i; i = this.moveQueue.pop()) { 
-				if (i.relx) {
-					bufx += i.relx;
-				}
-				if (i.rely) {
-					bufy += i.rely;
+				if (i.rel) {
+					buffer = buffer.add(i.rel);
 				}
 				
-				if (i.absx) {
-					bufx = i.absx;
-				}
-				if (i.absy) {
-					bufy = i.absy;
-				}
-				
-				if (i.angle) {
-					bufx = Math.cos(i.angle)*i.dist;
-					bufy = Math.sin(i.angle)*i.dist;
+				if (i.abs) {
+					buffer = i.abs;
 				}
 			}
-			value.relx = bufx;
-			value.rely = bufy;
-			value.angle = isValue(bufx) && Math.atan(bufy/bufx) || this.angle; //bufx could be zero
-			value.dist = Math.sqrt(Math.pow(bufx, 2) + Math.pow(bufy, 2));
 			
 			if (!emptyQueue) {
-				this.moveQueue.push({relx: bufx, rely: bufy});
+				this.moveQueue.push({rel: buffer});
 			}
 			
-			return value;
+			return buffer;
 		},
 		
 		move: function () {
-			var data = this.getMove(true);
+			var dist = this.getMove(true);
 			
-			this.x += data.relx;
-			this.y += data.rely;
-			this.extend(data);
+			this.pos = this.pos.add(dist);
+			this.lastMove = dist;
 			
 			return this.dimAdjust();
 		}

@@ -72,7 +72,7 @@ Iuppiter.toByteArray = function(input) {
     }
 
     return b;
-}
+};
 
 /**
  * Base64 Class.
@@ -416,7 +416,7 @@ Iuppiter.decompress = function(input, _bytes) {
             for(i = 0; i < dst; i++)
                 dstart[i] = String.fromCharCode(dstart[i]);
 
-            return dstart.join('')
+            return dstart.join('');
         }
     };   
             

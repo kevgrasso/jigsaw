@@ -1,3 +1,15 @@
+//CLEANUP:
+//port to coffeescript
+//discard init loop for things subscribed to step
+//move Timer from TRIGGER to own class
+//move Actor to collision, rename gridclasses
+//optimize priority arrays
+//FEATURES:
+//use SAT for collision
+//getPoint function
+//mouse input
+//finish maps
+
 document.addEventListener('DOMContentLoaded', function () {
 	var frameTimer = (new Date()).getTime(); //keep track of when frames should execute
 	
@@ -41,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function () {
     	trigger: 'step',
     	func: VIEWPORT.render,
     	obj: VIEWPORT,
-    	priority: 25,
+    	priority: 100,
     	context: 'global'
     });
     

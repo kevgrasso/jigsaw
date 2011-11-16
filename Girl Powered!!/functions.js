@@ -44,31 +44,16 @@ function makeClass(subc, attributes, superc) {
 }
 
 //TODO: allow hard refresh of scripts to be dynamically loaded
-function include (filename, callback) {
+function include (filename) {
 	var head = document.head,
-		e = document.createElement('script'),
-		targets = include.targets,
-		obj = { };
+		e = document.createElement('script');
 	e.type = 'application/javascript';
 	e.charset = 'utf-8';
-	
-	//setup target object
-	if (!targets[filename] ) {
-		targets[filename] = [];
-	}
-	targets[filename].push(obj);
 	
 	function cleanup () {
 	    if (this.readyState == 'complete') {
 	        e.removeEventListener('onload', cleanup, false); // Plug IE memory leak-- even there in IE9!
-	        if (targets[filename].length === 0) {
-	        	delete targets[filename];
-	        }
 	        head.removeChild(e);
-	        
-	        if (callback) {
-	        	callback(obj, filename);
-	        }
 	    }
 	}
 	e.addEventListener('onload', cleanup, false); 	//all browsers should call this when script is finished
@@ -76,10 +61,7 @@ function include (filename, callback) {
 	//finish loading script
 	e.src = 'include/'+filename+'.js';
 	head.appendChild(e);
-	
-	return obj;
 }
-include.targets = { };
 
 
 function getSurface(w, h) {
