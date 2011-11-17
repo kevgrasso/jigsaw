@@ -151,7 +151,7 @@ INPUT.setKeys({
 		pos: $V([400, 140]),
 		z: 1,
 		
-		top: -140,
+		top: -80,
 		bottom: 0,
 		left: -20,
 		right: 20,
@@ -162,16 +162,16 @@ INPUT.setKeys({
 			draw: function (c, viewX, viewY, count) {
 				c.translate(this.parent.pos.getX(), this.parent.pos.getY());
 				c.fillStyle = 'white';
-				c.fillRect(this.pos.getX(), this.pos.getY(), 30, 80);
+				c.fillRect(this.pos.getX(), this.pos.getY(), 20, 80);
 			}
 		} },
 		
 		shapes:{ bulk: {
 			type: 'box',
 			pool: 'global',
-			pos: $V([-20, -150]),
+			pos: $V([0, -40]),
 			width: 40,
-			height: 150
+			height: 80
 		} }
 	});
 	extend(player, {
@@ -282,7 +282,7 @@ INPUT.setKeys({
 			priority: 50
 		}),
 		ftLeft: INPUT.request({
-			input: 'leftHold',
+			input: 'leftDown',
 			context: 'global',
 			obj: player,
 			func: function () {
@@ -300,7 +300,7 @@ INPUT.setKeys({
 			priority: 50
 		}),
 		ftRight: INPUT.request({
-			input: 'rightHold',
+			input: 'rightDown',
 			context: 'global',
 			obj: player,
 			func: function () {

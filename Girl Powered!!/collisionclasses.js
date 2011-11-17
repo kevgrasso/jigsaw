@@ -1,6 +1,184 @@
 (function () {
 	//collision+shapes,
 		var testShape;
+		
+		Actor = makeClass(function (spec) {
+			var i;
+			
+			this.pos = spec.pos || Vector.Zero(2);
+			
+			this.sprites = { };
+			if (spec.sprites) {
+				for (i in spec.sprites) {
+					if (spec.sprites.hasOwnProperty(i)) {
+						spec.sprites[i].parent = this;
+						this.sprites[i] = new Sprite(spec.sprites[i]);
+					}
+				}
+			}
+			this.shapes = { };
+			if (spec.shapes) {
+				for (i in spec.shapes) {
+					if (spec.shapes.hasOwnProperty(i)) {
+						spec.shapes[i].parent = this;
+						this.shapes[i] = Shape.create(spec.shapes[i]);
+					}
+				}
+			}
+			
+			if (spec.grid) {
+				this.grid = spec.grid;
+			}
+			
+			this.moveQueue = extend([], {
+				pushRel: function (vector) {
+					this.push({rel: vector});
+				},
+				pushAbs: function (vector) {
+					this.push({abs: vector});
+				}
+			});
+			
+			this.top = spec.top || 0;
+			this.bottom = spec.bottom || 0;
+			this.left = spec.left || 0;
+			this.right = spec.right || 0;
+			if (spec.attrib) {
+				this.extend(spec.attrib);
+			}
+			
+			this.dimAdjust();
+		}, {
+			sprites: null,
+			shapes: null,
+			grid: null,
+			
+			pos: null,
+			
+			lastMove: null,
+			
+			//relative location of dimensions
+			top: 0,
+			bottom: 0,
+			left: 0,
+			right: 0,
+			
+			//absolute location of dimensions
+			x1: 0,	//left
+			y1: 0,	//top
+			x2: 0,	//right
+			y2: 0,	//bottom
+			
+			//cells which contain the corners of the entity
+			cells: null,
+			celltl: null,
+			celltr: null,
+			cellbl: null,
+			cellbr: null,
+			
+			//METHODS:
+			dimAdjust: function () {
+				var grid = this.grid,
+					gridx1, gridx2, gridy1, gridy2;
+				
+				//calculate edges
+				this.x1 = this.left + this.pos.elements[0];
+				this.y1 = this.top + this.pos.elements[1];
+				this.x2 = this.right + this.pos.elements[0];
+				this.y2 = this.bottom + this.pos.elements[1];
+				
+				if (this.grid) {
+					//match each edge to a row or column on the grid
+					gridx1 = grid.getcx(this.x1);
+					gridx2 = grid.getcx(this.x2);
+					gridy1 = grid.getcy(this.y1);
+					gridy2 = grid.getcy(this.y2);
+					
+					//i could do: if (cell !== ((temp = grid[gridx]) && temp[gridy] || null))
+					//but really wouldn't be worth the decline in readability
+					
+					//top left corner
+					if (this.celltl !== (grid[gridx1] && grid[gridx1][gridy1] || null)) {
+						if (this.celltl !== null) {
+							this.celltl.deregister(this);
+						}
+						
+						this.celltl = (grid[gridx1] && grid[gridx1][gridy1] || null);
+						if (this.celltl) {
+							this.celltl.register(this);
+						}
+					}
+					
+					//bottom left corner
+					if (this.cellbl !== (grid[gridx1] && grid[gridx1][gridy2] || null)) {
+						if (this.cellbl !== null) {
+							this.cellbl.deregister(this);
+						}
+						
+						this.cellbl = (grid[gridx1] && grid[gridx1][gridy2] || null);
+						if (this.cellbl) {
+							this.cellbl.register(this);
+						}
+					}
+					
+					//top right corner
+					if (this.celltr !== (grid[gridx2] && grid[gridx2][gridy1] || null)) {
+						if (this.celltr !== null) {
+							this.celltr.deregister(this);
+						}
+						
+						this.celltr = (grid[gridx2] && grid[gridx2][gridy1] || null);
+						if (this.celltr) {
+							this.celltr.register(this);
+						}
+					}
+					
+					//bottom right corner
+					if (this.cellbr !== (grid[gridx2] && grid[gridx2][gridy2] || null)) {
+						if (this.cellbr !== null) {
+							this.cellbr.deregister(this);
+						}
+						
+						this.cellbr = (grid[gridx2] && grid[gridx2][gridy2] || null);
+						if (this.cellbr) {
+							this.cellbr.register(this);
+						}
+					}
+				}
+			},
+			
+			getMove: function (emptyQueue) {
+				var i, buffer = Vector.Zero(2);
+				
+				
+				this.moveQueue.reverse();
+				for (i = this.moveQueue.pop(); i; i = this.moveQueue.pop()) { 
+					if (i.rel) {
+						buffer = buffer.add(i.rel);
+					}
+					
+					if (i.abs) {
+						buffer = i.abs;
+					}
+				}
+				
+				if (!emptyQueue) {
+					this.moveQueue.push({rel: buffer});
+				}
+				
+				return buffer;
+			},
+			
+			move: function () {
+				var dist = this.getMove(true);
+				
+				this.pos = this.pos.add(dist);
+				this.lastMove = dist;
+				
+				return this.dimAdjust();
+			}
+		});
+		
 	//TODO: lineline boxline circleline linepoint, more shapes, return vector+penetration
 	
 	function testShapes(shape1, shape2, func, checklist) {
@@ -63,7 +241,7 @@
 			for (i = 0; i+1 < list1.length; i += 1) {
 				shape1 = list1[i].data;
 				
-				for (j = i; j < list1.length; j += 1) {
+				for (j = i+1; j < list1.length; j += 1) {
 					shape2 = list1[j].data;
 					
 					if (!swapped) {
@@ -289,7 +467,7 @@
 		
 			boxbox: function (a, b) { //hide
 				//If any of the sides from shape1 are outside of shape2
-				return (a.bottom >= b.top && a.top <= b.bottom && a.right >= b.left && a.left <= b.right);
+				return !(a.bottom <= b.top || a.top >= b.bottom || a.right <= b.left || a.left >= b.right);
 			},
 			circlecircle: function (a, b) { //hide
 				return (Math.sqrt( Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2 ) )) <= (a.radius + b.radius);
@@ -343,29 +521,20 @@
 	
 	function getAttrib(shape) {
 		var value = { },
-			xOffset = shape.parent.pos.getX(), yOffset = shape.parent.pos.getY();
+			xOffset = shape.parent.pos.getX()+shape.pos.getX(),
+			yOffset = shape.parent.pos.getY()+shape.pos.getY();
 		
 		switch (shape.type) {
 		case 'box':
-			value.top    = yOffset + shape.pos.getY();
-			value.bottom = yOffset + shape.pos.getY() + shape.height;
-			value.left   = xOffset + shape.pos.getX();
-			value.right  = xOffset + shape.pos.getX() + shape.width;
+			value.top    = yOffset - (shape.height/2);
+			value.bottom = yOffset + (shape.height/2);
+			value.left   = xOffset - (shape.height/2);
+			value.right  = xOffset + (shape.height/2);
 			break;
 		case 'circle':
-			value.x      = xOffset + shape.pos.getX();
-			value.y      = yOffset + shape.pos.getY();
+			value.x      = xOffset;
+			value.y      = yOffset;
 			value.radius = shape.radius;
-			break;
-		case 'line':
-			value.x1 	 = xOffset + shape.pos.getX();
-			value.y1 	 = yOffset + shape.pos.getY();
-			value.x2 	 = xOffset + shape.endx;
-			value.y2 	 = yOffset + shape.endy;
-			break;
-		case 'point':
-			value.x  	 = xOffset + shape.pos.getX();
-			value.y 	 = yOffset + shape.pos.getY();
 			break;
 		}
 		
@@ -393,7 +562,7 @@
 			//and calculate required variables
 			var testName = this.type + otherShape.type;
 			
-			if (!testShape[testName]) {
+			if (testShape[testName]) {
 				return testShape[testName](getAttrib(this), getAttrib(otherShape));
 			} else {
 				return testShape[otherShape.type + this.type](getAttrib(otherShape), getAttrib(this));
