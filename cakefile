@@ -1,0 +1,16 @@
+fs            = require 'fs'
+{exec, spawn} = require 'child_process'
+
+task 'build', 'Build lib/ from src/', ->
+    exec 'coffee -c -o lib/ src/', (err, stdout, stderr) ->
+        throw err if err?
+        console.log stdout + stderr
+
+do ->
+    watcher = null
+    task 'watch', 'Watch src/ for changes', ->
+        fs.watch 'src', (err, filename) ->
+            console.log "#{(new Date).toLocaleTimeString()} Observed change in #{filename}"
+            invoke 'build'
+        console.log 'Watching...'
+        
