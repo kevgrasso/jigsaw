@@ -46,7 +46,7 @@ window.Input = new class
         #only handle true keydown-- ignore further key presses
         if keyname? and not Input.state[keyname]
             Input.state[keyname] = on
-            Input.timeSince[keyname+'Down'] = Trigger.frameCount.global
+            Input.timeOf[keyname+'Down'] = Trigger.frameCount.global
             
             #determine which triggers need to be fired
             if Input.lastkey is keyname and Input.getKeyTime(keyname, 'up') <= interval
@@ -89,7 +89,7 @@ window.Input = new class
         e.stopImmediatePropagation()
 
         Input.state[keyname] = off
-        Input.timeSince[keyname+'Up'] = Trigger.frameCount.global
+        Input.timeOf[keyname+'Up'] = Trigger.frameCount.global
         
         #determine which triggers need to be fired
         if Input.repeat is yes
@@ -139,8 +139,8 @@ window.Input = new class
             inputs[keycode].holdidlist = {}
 
             Input.state[keyname] = false
-            Input.timeSince["#{keyname}Down"] = 0
-            Input.timeSince["#{keyname}Up"] = 0
+            Input.timeOf["#{keyname}Down"] = 0
+            Input.timeOf["#{keyname}Up"] = 0
             Input.hold[keyname] = false
             Input.repeat[keyname] = false
         else
@@ -153,7 +153,7 @@ window.Input = new class
             if trigger.substr(trigger.length-4, 4) is 'Hold'
                 spec.context = [spec.context] if typeof spec.context is 'string'
 
-                for k, v of spec.context
+                for v in spec.context
                     unless inputs[keycode].holdcontextlist[v]
                         inputs[keycode].holdcontextlist[v] = 1
                     else
@@ -180,7 +180,7 @@ window.Input = new class
 
                 spec.context = [spec.context] if typeof spec.context is 'string'
 
-                for v in spec.context
+                for v of spec.context
                     inputs[keycode].holdcontextlist[v] -= 1
                     if inputs[keycode].holdcontextlist[v] <= 0
                         delete inputs[keycode].holdcontextlist[v]
@@ -197,8 +197,8 @@ window.Input = new class
         if inputs[keycode].count <= 0
             delete inputs[keycode]
             delete Input.state[keyname]
-            delete Input.timeSince["#{keyname}Down"]
-            delete Input.timeSince["#{keyname}Up"]
+            delete Input.timeOf["#{keyname}Down"]
+            delete Input.timeOf["#{keyname}Up"]
             delete Input.hold[keyname]
             delete Input.repeat[keyname]
 
@@ -287,7 +287,7 @@ window.Input = new class
                             inputs[input].func = (e) ->
                                 e.preventDefault()
                                 e.stopImmediatePropagation()
-                                @timeSince[input] = 0
+                                @timeOf[input] = 0
 
                                 Trigger.fireTrigger input, e
                             document.addEventListener(input, inputs[input].func, false)
@@ -297,7 +297,7 @@ window.Input = new class
                 v.trigger = w #prep spec.trigger for subscription
                 switch input #handle triggers
                     when 'keyboard'
-                        keyboardSubscribe v, w
+                        keyboardRegister v, w
                         break
                     else
                         Trigger.subscribe v
@@ -330,7 +330,7 @@ window.Input = new class
 
                 switch input #handle triggers
                     when 'keyboard'
-                        keyboardClose(v, w)
+                        keyboardUnregister(v, w)
                         break
                     else
                         Trigger.unsubscribe(w, v.func)

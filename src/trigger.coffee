@@ -7,8 +7,8 @@ window.Trigger = new class
     entries = {} #shortcut to subscription info by function id
     
     #parses subscription data, manages timers and calls functions if has active context
-    parseEntry = (entry, trigger, context, args) ->
-        for own k of entry.context when contextstate[k]? and (not context? or context is k)
+    parseEntry = (entry, trigger, context, args...) ->
+        for v in entry.context when contextstate[v]? and (not context? or context is v)
             #timer code
             if entry.timerCount?
                 entry.timerCount -= 1
@@ -19,12 +19,13 @@ window.Trigger = new class
                     entry.timerCount = entry.timerLength
                 else if entry.timerCount <= 0 #timeout code
                     Trigger.unsubscribe(trigger, entry.func, entry.triggerId)
-
+            
+            argList = entry.autoArgs?.concat(args) ? args
             #call the function. if there is an object specified, make it the thisobj
-            if not entry.obj?
-                entry.func.apply(null, entry.autoArgs.concat args)
+            unless entry.obj?
+                entry.func.apply(null, argList)
             else
-                entry.func.apply(entry.obj, entry.autoArgs.concat args)
+                entry.func.apply(entry.obj, argList)
             undefined
 
     #public
@@ -72,7 +73,7 @@ window.Trigger = new class
         trigger = [trigger] unless Array.isArray trigger
 
         for v in trigger
-            id = v+func.getid()+'#'+triggerId
+            id = v+func.getID()+'#'+triggerId
             unless entries[id]?
                 entries[id] = spec
                 triggerlist[v].push spec
@@ -83,21 +84,14 @@ window.Trigger = new class
                 spec.timerCount = timerLength
                 switch timerType #error detection
                     when 'timeout', 'continuous', 'loop'
-                        if trigger isnt 'step'
-                            throw new Error "Timer not om 'step' ('#{trigger}')"
+                        if v isnt 'step'
+                            throw new Error "Timer not on 'step' ('#{v}')"
                     else
                         throw new Error("spec.timerType is #{timerType}")
 
-            if typeof context is 'string'
-                buffer = {}
-                buffer[spec.context] = true
-                spec.context = buffer
-            else
-                buffer = {}
-                buffer[w] = true for w in spec.context
-                context = buffer
+            spec.context = [context] if typeof context is 'string'
             #in case no auto-args are given
-            autoArgs = [] unless spec.autoArgs
+            spec.autoArgs = [] unless autoArgs
 
         func
     
@@ -106,7 +100,7 @@ window.Trigger = new class
         trigger = [trigger] unless Array.isArray trigger
 
         for v in trigger
-            id = v+func.getid()+'#'+triggerId
+            id = v+func.getID()+'#'+triggerId
             triggerlist[v].remove entries[id]
             delete entries[id]
         undefined

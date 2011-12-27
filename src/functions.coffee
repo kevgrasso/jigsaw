@@ -77,10 +77,10 @@ Object::extend = (src, depth) ->
     extend this, src, depth
 
 Object::objectID = null #cache storing for object's unique ID
-Object::getId = -> #returns object's unique ID, generating it if neccessary 
-    @objectId = getUniqueNum().toString() if not @hasOwnProperty 'objectId'
+Object::getID = -> #returns object's unique ID, generating it if neccessary 
+    @objectID = getUniqueNum().toString() if not @hasOwnProperty 'objectID'
     
-    @objectId
+    @objectID
 
 #returns true if object has no contents
 Object::isEmpty = ->

@@ -144,7 +144,7 @@ class window.CollisionCell extends Cell
         
         for own k, v of obj.shapes
             pool = v.pool
-            id = v.getid()
+            id = v.getID()
 
             if @shapelist[id]?
                 node = @shapes[pool][@shapelist[id]]
@@ -162,11 +162,11 @@ class window.CollisionCell extends Cell
                     @grid.pools[pool] = {}
                     @grid.poolcount[pool] = {count: 0}
                 
-                if @grid.pools[pool][@getid()]
-                    @grid.poolcount[pool][@getid()] += 1
+                if @grid.pools[pool][@getID()]
+                    @grid.poolcount[pool][@getID()] += 1
                 else
-                    @grid.pools[pool][@getid()] = this
-                    @grid.poolcount[pool][@getid()] = 1
+                    @grid.pools[pool][@getID()] = this
+                    @grid.poolcount[pool][@getID()] = 1
                     @grid.poolcount[pool].count += 1
         undefined
     
@@ -175,7 +175,7 @@ class window.CollisionCell extends Cell
         obj = {shapes: {obj}} if obj instanceof Shape
         
         for own k, v in obj.shapes
-            id = v.getid()
+            id = v.getID()
             pool = v.pool
             shapePos = @shapelist[id]
             node = @shapes[pool][shapePos]
@@ -186,15 +186,15 @@ class window.CollisionCell extends Cell
                 @shapes[pool].splice(shapePos, 1);
                 delete @shapelist[id];
 
-                @grid.poolcount[pool][this.getid()] -= 1;
-                if @grid.poolcount[pool][this.getid()] is 0
-                    delete @grid.pools[pool][@getid()]
-                    delete @grid.poolcount[pool][this.getid()]
+                @grid.poolcount[pool][@getID()] -= 1;
+                if @grid.poolcount[pool][@getID()] is 0
+                    delete @grid.pools[pool][@getID()]
+                    delete @grid.poolcount[pool][@getID()]
 
                     @grid.poolcount[pool].count -= 1
                     if @grid.poolcount[pool].count is 0
-                        delete this.grid.pools[pool]
-                        delete this.grid.poolcount[pool]
+                        delete @grid.pools[pool]
+                        delete @grid.poolcount[pool]
         undefined
 
 #grid for managing collisions
@@ -211,14 +211,14 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
         if context? or priority?
             unless (context? and priority?)
                 throw new Error 'CollsionCell not given context AND priority'
-            @subscribeTo(context, priority, trigId)
+            @subscribeTo(context, priority, trigID)
     
     #private
     
     #test one shape against another
     testShapes = (shape1, shape2, func, checklist) ->
-        shapeid1 = shape1.getid()
-        shapeid2 = shape2.getid()
+        shapeid1 = shape1.getID()
+        shapeid2 = shape2.getID()
 
         #so that there's only one possible key for each combination
         if shapeid1 < shapeid2
@@ -384,33 +384,33 @@ class window.Shape
                 value.radius = shape.radius
         value
         
-        #object with functions test collisions for each pair of shapes
-        testShape =
-            boxbox: (a, b) -> #hide
-                #If any of the sides from shape1 are outside of shape2
-                not (a.bottom <= b.top or a.top >= b.bottom or a.right <= b.left or a.left >= b.right)
-            circlecircle: (a, b) -> #hide
-                #if the distance between the two points is less than their combined radius,
-                #they are intersecting
-                (Math.sqrt( Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2) )) <= (a.radius + b.radius)
-            boxcircle:(a, b) -> #hide
-                #find closest X offset
-                if b.x <= a.left
-                    aX = a.left
-                else if b.x >= a.right
-                    aX = a.right
-                else
-                    aX = b.x
+    #object with functions test collisions for each pair of shapes
+    testShape =
+        boxbox: (a, b) -> #hide
+            #If any of the sides from shape1 are outside of shape2
+            not (a.bottom <= b.top or a.top >= b.bottom or a.right <= b.left or a.left >= b.right)
+        circlecircle: (a, b) -> #hide
+            #if the distance between the two points is less than their combined radius,
+            #they are intersecting
+            (Math.sqrt( Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2) )) <= (a.radius + b.radius)
+        boxcircle:(a, b) -> #hide
+            #find closest X offset
+            if b.x <= a.left
+                aX = a.left
+            else if b.x >= a.right
+                aX = a.right
+            else
+                aX = b.x
 
-                #find closest Y offset
-                if b.y <= a.top
-                    aY = a.top
-                else if b.y >= a.bottom
-                    aY = a.bottom
-                else
-                    aY = b.y
-                #if closest point is inside the circle, there is collision
-                (Math.sqrt( Math.pow(b.x - aX, 2) + Math.pow(b.y - aY, 2) )) <= 0
+            #find closest Y offset
+            if b.y <= a.top
+                aY = a.top
+            else if b.y >= a.bottom
+                aY = a.bottom
+            else
+                aY = b.y
+            #if closest point is inside the circle, there is collision
+            (Math.sqrt( Math.pow(b.x - aX, 2) + Math.pow(b.y - aY, 2) )) <= 0
 
     #public
     

@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', ->
     #register step-flow events
     Trigger.addTrigger 'step'
 	
-    #setup canvas
-    window.Viewport = new class extends ContextBuffer
+    #define Viewport singleton
+    window.Viewport = new class extends Surface
         display = document.getElementById('display')
         constructor: ->
             super
@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', ->
                 width: display.width
                 height: display.height
                 context: display.getContext('2d')
+                destination: no
                 draw: -> #todo: start dropping frames if the time gap gets too big
                     @render()
                     #INPUT.updateMouse()

@@ -3,10 +3,10 @@
 #base layer class for subscribing to destination and displaying graphics on request
 class window.Layer
     constructor: (spec) ->
-        {@draw, @z, destination} = spec
+        {@draw, @depth, destination} = spec
 
-        if window?
-            delete destination if destination is yes
+        unless destination is no
+            delete destination if not destination?
             @subscribeTo destination
 
     destination: null #cxt buffer which layer is subscribed to and requests draw
@@ -14,7 +14,7 @@ class window.Layer
     
     #subscribes layer to given destination, if none given, uses the Viewport
     subscribeTo: (destination = Viewport) ->
-        @deactivate() if @destination
+        @deactivate() if @destination?
 
         @destination = destination
         destination.subscribe this

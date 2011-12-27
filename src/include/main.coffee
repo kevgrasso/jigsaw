@@ -67,7 +67,10 @@
 #jump kick
 #leap kick
 #
-#combos have minor effect on damage, major effect on pickups
+#slow health drain outside of safe zones (stress) (or just a timer. when out drains juice+health)
+#combos have minor effect on damage, major effect on juice/whelm regen
+#no character switch (maybe as power? depletes all magic/whelm; temporary overloads
+#                     whelm tab recovery stats with own)
 
 Viewport.setFrameLength 50
 Input.setKeys
@@ -262,28 +265,28 @@ player.extend
 				
             @move()
         priority: 50
-    ftLeft: Input.request
+    ftLeft: Input.register
         input: 'leftHold'
         context: 'global'
         obj: player
         func: ->
             @velocity = @velocity.subtract $V([@stats[@id].fightVel,0])
         priority: 50
-    ftLeftStop: Input.request
+    ftLeftStop: Input.register
         input: 'leftUp'
         context: 'global'
         obj: player
         func: ->
             @velocity = @velocity.add $V([@stats[@id].fightVel,0])
         priority: 50
-    ftRight: Input.request
+    ftRight: Input.register
         input: 'rightHold'
         context: 'global'
         obj: player
         func: ->
             @velocity = @velocity.add $V([@stats[@id].fightVel,0])
         priority: 50
-    ftRightStop: Input.request
+    ftRightStop: Input.register
         input: 'rightUp'
         context: 'global'
         obj: player

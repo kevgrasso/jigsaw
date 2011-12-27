@@ -9,8 +9,11 @@ task 'build', 'Build lib/ from src/', ->
 do ->
     watcher = null
     task 'watch', 'Watch src/ for changes', ->
+        lastTime = 0
         fs.watch 'src', (err, filename) ->
-            console.log "#{(new Date).toLocaleTimeString()} Observed change in #{filename}"
-            invoke 'build'
+            now = (new Date).getTime()
+            unless lastTime is now
+                console.log "#{(new Date).toLocaleTimeString()} Observed change in #{filename}"
+                invoke 'build'
         console.log 'Watching...'
         

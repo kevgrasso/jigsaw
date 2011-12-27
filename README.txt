@@ -1,5 +1,5 @@
-Jigsaw by Kevin Grasso
-Game Engine for HTML5 Canvas.
+Jigsaw is a 2D Game Engine for HTML5 Canvas
+written by Kevin Grasso in Coffeescript
 
 Requires:
 <canvas>
