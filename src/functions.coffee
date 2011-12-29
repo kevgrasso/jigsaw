@@ -15,8 +15,17 @@ document.head ?= document.getElementsByTagName('head')[0]
 
 
 #appends source object's attributes to the target object
-window.extend = (target, src) ->
+window.extend = (arg...) -> #([depth,] target, src1[, srcN])
+    if typeof arg[0] is 'bool'
+        {0:depth, 1: target, 2:src, 3:multi} = arg
+    else
+        depth = false
+        {0: target, 1:src, 2:multi} = arg
+    
     target[k] = v for own k, v of src #normal copy
+    if multi?
+        arg.splice((unless depth then 1 else 2), 1)
+        extend.apply(null, arg) #remove src just copied
     target
 
 #loads and runs external script from /include/
@@ -69,12 +78,14 @@ do ->
 # Object prototype functions
 
 #clones object contents to new object
-Object::clone = (depth) ->
-    extend {}, this, depth
+Object::clone = (arg...) ->
+    arg.splice((unless typeof arg[0] is 'bool' then 0 else 1), 0, {}, this)
+    extend.apply(null, arg)
 
 #object oriented version of extend function
-Object::extend = (src, depth) ->
-    extend this, src, depth
+Object::extend = (arg...) ->
+    arg.splice((unless typeof arg[0] is 'bool' then 0 else 1), 0, this)
+    extend.apply(null, arg)
 
 Object::objectID = null #cache storing for object's unique ID
 Object::getID = -> #returns object's unique ID, generating it if neccessary 

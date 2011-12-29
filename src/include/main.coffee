@@ -37,11 +37,6 @@
 #MoveAlong (for walls too (for walljumps and grabbing ledges))
 #MoveAcross
 #
-#PLAYER:
-#balance characters better
-#change jump physics
-#add dodging
-#
 #ENEMIES:
 #
 #ANIMATION:
@@ -58,19 +53,6 @@
 
 #BUGS:
 #test won't register collision if y ~= 255
-
-#attacks:
-#punch
-#kick
-#walking punch
-#running punch
-#jump kick
-#leap kick
-#
-#slow health drain outside of safe zones (stress) (or just a timer. when out drains juice+health)
-#combos have minor effect on damage, major effect on juice/whelm regen
-#no character switch (maybe as power? depletes all magic/whelm; temporary overloads
-#                     whelm tab recovery stats with own)
 
 Viewport.setFrameLength 50
 Input.setKeys
@@ -162,137 +144,43 @@ player = new class extends Actor
                     pos: $V [0, -40]
                     width: 40
                     height: 80
+        trigSpec =
+            context: 'global'
+            obj: this
+            priority: 50
 
-    id: 'jess'
+        Trigger.subscribe trigSpec.clone
+            trigger: 'step'
+            func: @step
+        Input.register trigSpec.clone
+            input: 'leftHold'
+            func: @ftLeft
+        Input.register trigSpec.clone
+            input: 'leftUp'
+            func: @ftLeftStop
+        Input.register trigSpec.clone
+            input: 'rightHold'
+            func: @ftRight
+        Input.register trigSpec.clone
+            input: 'rightUp'
+            func: @ftRightStop
+
     velocity: Vector.Zero(2)
-    jumpState: 'walk'
-    dashState: 'ready'
-    stats:
-        #jess:
-        # speed med, but relatively faster run
-        # jump bit lower than megan, swing hook, umbrella (ride thermals)
-        # grav high
-        # max grav high
-        # range med
-        # recharge low
-        # attack low
-        # juice high
-        # whelm high
-        # wide phys and stun attack
-        # fire
-        #megan:
-        # speed high
-        # jump high, wall stick+jump, floaty
-        # grav low
-        # max grav low
-        # range low
-        # recharge high
-        # attack high
-        # juice low
-        # whelm low
-        # combo phys and no stun attack, air attack
-        # phys stronger than normal
-        # water
-        #kate:
-        # speed low
-        # jump low, double jump, jetpack, backflip
-        # grav high
-        # max grav mid
-        # range high
-        # recharge med
-        # attack med
-        # juice med
-        # whelm med
-        # no phys attack
-        # electricity
-			
-        jess:
-            fightVel: 4.1
-            flightVel: 8.75
-            skidVel: null
-            skidTime: null
-				
-            jumpVel: null
-            ftJumpVel: null
-            flJumpVel: null
-            gravity: null
-		
-    #			jess: {
-    #				ftVel: 4.1,
-    #				flAcc: 4/14,
-    #				
-    #				deacc: 10/21,
-    #				turnAcc: 4/14,
-    #				maxVel: 8.75,
-    #				
-    #				jmpVel: -14,
-    #				airAcc: 9/14,
-    #				maxAirVel: 5
-    #			}, 
-    #			kate: {
-    #				ftVel: 3.2,
-    #				flAcc: 6/14,
-    #				
-    #				deacc: 16/21,
-    #				turnAcc: 5/14,
-    #				maxVel: 8,
-    #				
-    #				jmpVel: -13,
-    #				airAcc: 7/14,
-    #				maxAirVel: 4.5
-    #			},
-    #			megan: {
-    #				ftVel: 4.8,
-    #				flAcc: 5/14,
-    #				
-    #				deacc:8/21,
-    #				turnAcc: 3/14,
-    #				maxVel: 9.5,
-    #				
-    #				jmpVel: -15,
-    #				airAcc: 5/14,
-    #				maxAirVel: 4
-    #			}
-player.extend	
-    step: Trigger.subscribe
-        trigger: 'step'
-        context: 'global'
-        obj: player
-        func: ->
+    
+    step: ->
             collide = no
 				
             @moveQueue.pushRel(@velocity, null)
 				
             @move()
-        priority: 50
-    ftLeft: Input.register
-        input: 'leftHold'
-        context: 'global'
-        obj: player
-        func: ->
-            @velocity = @velocity.subtract $V([@stats[@id].fightVel,0])
-        priority: 50
-    ftLeftStop: Input.register
-        input: 'leftUp'
-        context: 'global'
-        obj: player
-        func: ->
-            @velocity = @velocity.add $V([@stats[@id].fightVel,0])
-        priority: 50
-    ftRight: Input.register
-        input: 'rightHold'
-        context: 'global'
-        obj: player
-        func: ->
-            @velocity = @velocity.add $V([@stats[@id].fightVel,0])
-        priority: 50
-    ftRightStop: Input.register
-        input: 'rightUp'
-        context: 'global'
-        obj: player
-        func: ->
-            @velocity = @velocity.subtract $V([@stats[@id].fightVel,0])
-        priority: 50
+    ftLeft: ->
+            @velocity = @velocity.subtract $V([4,0])
+    ftLeftStop: ->
+            @velocity = @velocity.add $V([4,0])
+    ftRight: ->
+            @velocity = @velocity.add $V([4,0])
+    ftRightStop:  ->
+            @velocity = @velocity.subtract $V([4,0])
 
 test = new Actor
     pos: $V [150, 100]
