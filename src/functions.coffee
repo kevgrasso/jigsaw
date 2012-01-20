@@ -25,7 +25,7 @@ window.extend = (arg...) -> #([depth,] target, src1[, srcN])
     target[k] = v for own k, v of src #normal copy
     if multi?
         arg.splice((unless depth then 1 else 2), 1)
-        extend.apply(null, arg) #remove src just copied
+        extend(arg...) #remove src just copied
     target
 
 #loads and runs external script from /include/
@@ -49,7 +49,7 @@ window.include = (filename) -> #TODO: allow hard refresh of scripts to be
     head.appendChild e
 
 #creates and returns a new HTML Canvas context for drawing to/from
-window.getFramebuffer = (w, h) ->
+window.createFramebuffer = (w, h) ->
     canvas = document.createElement 'CANVAS'
     canvas.setAttribute 'width', w
     canvas.setAttribute 'height', h
@@ -59,6 +59,9 @@ window.getFramebuffer = (w, h) ->
 #retrieves the current time in miliseconds
 window.getTime = ->
     (new Date()).getTime()
+    
+window.isNumeric = (num) ->
+    not isNaN(parseFloat(num)) and isFinite(num)
 
 #returns a random rumber between low and (just below) high
 window.randomNum = (low, high) ->
@@ -78,14 +81,14 @@ do ->
 # Object prototype functions
 
 #clones object contents to new object
-Object::clone = (arg...) ->
-    arg.splice((unless typeof arg[0] is 'bool' then 0 else 1), 0, {}, this)
-    extend.apply(null, arg)
+Object::clone = (args...) ->
+    args.splice((unless typeof args[0] is 'bool' then 0 else 1), 0, {}, this)
+    extend(args...)
 
 #object oriented version of extend function
-Object::extend = (arg...) ->
-    arg.splice((unless typeof arg[0] is 'bool' then 0 else 1), 0, this)
-    extend.apply(null, arg)
+Object::extend = (args...) ->
+    args.splice((unless typeof args[0] is 'bool' then 0 else 1), 0, this)
+    extend(args...)
 
 Object::objectID = null #cache storing for object's unique ID
 Object::getID = -> #returns object's unique ID, generating it if neccessary 
@@ -110,6 +113,12 @@ Object::hasValue = (value) ->
 Object::getKey = (value) ->
     return k for own k of this when this[k] is value
     undefined
+    
+Array::clone = ->
+    @slice(0)
+
+Array::remove = (value) ->
+    @splice(@indexOf(value), 1)
 
 #returns a random entry
 Array::getRandom = ->

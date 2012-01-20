@@ -10,7 +10,7 @@ window.Input = new class
     interval = 4 #length of time in frames for key tap to become held key
     
     #handles key hold inputs
-    holdhandle = (keyname, context) ->
+    holdhandle = (keyname, stateLock, stateBlacklist) ->
         Input.hold[keyname] = true
         
         #determine which triggers need to be fired
@@ -18,24 +18,29 @@ window.Input = new class
             if Input.repeat[keyname] is 'tap'
                 Trigger.fireTrigger {
                     name:"#{keyname}TapAndHold"
-                    context:context
+                    stateLock: stateLock
+                    stateBlacklist: stateBlacklist
                 }, keyname
             else
                 Trigger.fireTrigger {
                     name:"#{keyname}HoldAndHold"
-                    context:context
+                    stateLock: stateLock
+                    stateBlacklist: stateBlacklist
                 }, keyname
             Trigger.fireTrigger {
                 name:"#{keyname}PressAndHold"
-                context:context
+                stateLock: stateLock
+                stateBlacklist: stateBlacklist
             }, keyname
         Trigger.fireTrigger {
             name:"#{keyname}Hold"
-            context:context
+            stateLock: stateLock
+            stateBlacklist: stateBlacklist
         }, keyname
+        stateBlacklist[stateLock] = true
         
         #so uphandle doesn't unsubscribe from a nonexistent trigger
-        delete inputs[keyList[keyname]].holdidlist[context]
+        delete inputs[keyList[keyname]].holdIDList[state]
     
     #handles key down events
     downhandle = (e) ->
@@ -63,16 +68,17 @@ window.Input = new class
                 Input.repeat[keyname] = null
             Trigger.fireTrigger "#{keyname}Down", keyname
             
-            #set up hold timer for all relevant contexts
-            for own k of inputs[e.keyCode].holdcontextlist
+            #set up hold timer for all relevant states
+            stateBlacklist = {} #provide the same blacklist to all so it can be updated
+            for own k of inputs[e.keyCode].holdStateList
                 triggerId = getUniqueNum()
-                inputs[e.keyCode].holdidlist[k] = triggerId
+                inputs[e.keyCode].holdIDList[k] = triggerId
                 Trigger.subscribe {
                     trigger: 'step'
-                    context: k
+                    state: k
                     triggerId: triggerId
                     func: holdhandle
-                    autoArgs: [keyname, k]
+                    autoArgs: [keyname, k, stateBlacklist]
                     priority: -Infinity
                     timerType: 'timeout'
                     timerLength: interval
@@ -118,9 +124,9 @@ window.Input = new class
 
 
         if inputs[e.keyCode]?
-            for own k, v of inputs[e.keyCode].holdidlist #cancel all pending hold triggers
+            for own k, v of inputs[e.keyCode].holdIDList #cancel all pending hold triggers
                 Trigger.unsubscribe('step', holdhandle, v)
-                delete inputs[e.keyCode].holdidlist[k]
+                delete inputs[e.keyCode].holdIDList[k]
         undefined
     
     #processes a keyboard registration
@@ -135,8 +141,8 @@ window.Input = new class
             inputs[keycode].keyname = keyname
             inputs[keycode].count = 1
             inputs[keycode].trigger = {}
-            inputs[keycode].holdcontextlist = {}
-            inputs[keycode].holdidlist = {}
+            inputs[keycode].holdStateList = {}
+            inputs[keycode].holdIDList = {}
 
             Input.state[keyname] = false
             Input.timeOf["#{keyname}Down"] = 0
@@ -149,15 +155,15 @@ window.Input = new class
 
         #if registering a function
         if spec.func?
-            #if a hold-type input, relevant contexts to holdcontextlist
+            #if a hold-type input, relevant states to holdStateList
             if trigger.substr(trigger.length-4, 4) is 'Hold'
-                spec.context = [spec.context] if typeof spec.context is 'string'
+                spec.state = [spec.state] if typeof spec.state is 'string'
 
-                for v in spec.context
-                    unless inputs[keycode].holdcontextlist[v]
-                        inputs[keycode].holdcontextlist[v] = 1
+                for v in spec.state
+                    unless inputs[keycode].holdStateList[v]
+                        inputs[keycode].holdStateList[v] = 1
                     else
-                        inputs[keycode].holdcontextlist[v] += 1
+                        inputs[keycode].holdStateList[v] += 1
 
             #if trigger not in triglist, add it and create its trigger. Otherwise, increment its count.
             if triglist[trigger]?
@@ -175,15 +181,15 @@ window.Input = new class
         triglist = inputs[keycode].trigger
 
         if spec.func?
-            #if a hold-type input, relevant contexts to holdcontextlist
+            #if a hold-type input, remove relevant states from holdStateLlist
             if trigger.substr(trigger.length-4, 4) is 'Hold'
 
-                spec.context = [spec.context] if typeof spec.context is 'string'
+                spec.state = [spec.state] if typeof spec.state is 'string'
 
-                for v of spec.context
-                    inputs[keycode].holdcontextlist[v] -= 1
-                    if inputs[keycode].holdcontextlist[v] <= 0
-                        delete inputs[keycode].holdcontextlist[v]
+                for v of spec.state
+                    inputs[keycode].holdStateList[v] -= 1
+                    if inputs[keycode].holdStateLlist[v] <= 0
+                        delete inputs[keycode].holdStateList[v]
 
             #unsubcribe function from trigger
             Trigger.unsubscribe(trigger, spec.func, spec.trigId)

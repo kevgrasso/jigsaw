@@ -1,4 +1,4 @@
-#layerclasses.coffee: classes for graphical display
+#layerclasses.coffee: classes for drawing to HTML5 Canvas
 
 #base layer class for subscribing to destination and displaying graphics on request
 class window.Layer
@@ -45,9 +45,9 @@ class window.Surface extends Layer#todo: ContextBuffer.getAbsPosOf(Vector)
         {@pos, @viewpos, @height, @width, images, context} = spec
         super(spec)
 
-        @context = context ? getFramebuffer(@width, @height)
+        @context = context ? createFramebuffer(@width, @height)
 
-        @images = new BinaryHeap('z')
+        @images = []
         @imglist = {}
 
         @setImages(images) if images
@@ -63,11 +63,20 @@ class window.Surface extends Layer#todo: ContextBuffer.getAbsPosOf(Vector)
     
     #add layer to list
     subscribe: (image) ->
+        unless image.context?
+            image.context = ['global']
         @images.push image
     
     #remove layer from list
     unsubscribe: (image) ->
-        @images.remove image
+        @images.remove(image)
+        
+    unsubscribeByObject: (object) ->
+        for image in @images where image.parent is object or image is object
+            @unsubscribe(image)
+    unsubscribeByState: (state) ->
+        for image in @images where image.state is state
+            @unsubscribe(image)
     
     #returns entire set of layers
     getImages: ->
@@ -78,25 +87,22 @@ class window.Surface extends Layer#todo: ContextBuffer.getAbsPosOf(Vector)
     
     #splices given set into list of layers
     addImages: (images) ->
-        loop
-            i = images.pop()
-            break unless i
-            
-            @images.push i
+        @images.push(i) for i in images
     
     #empty layer set
     clrImages: ->
-        @images = BinaryHeap('z')
+        @images = []
+    
+    #private function for ranking two given objs by priority
+    compare = (a, b) ->
+        a.priority - b.priority
     
     #composite images (should be called from draw())
     render: ->
         c = @context
-        imgcopy = @images.copy()
-
-        loop
-            i = imgcopy.pop()
-            break unless i
-            
+        
+        @images.sort(compare)
+        for i in @images.clone() when StateMachine.check(image.state)?
             c.save()
             i.draw(c, @viewX, @viewY)
             c.restore()

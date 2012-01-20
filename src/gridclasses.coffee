@@ -34,7 +34,7 @@ class window.Grid
             this[i] = []
             this[i][j] = new @cell(this, i, j) for j in [0..@gridh/@cellh]
 
-    cell: Cell #type of cell used in grid 
+    cell: Cell #type of cell used in grid
 
     #cell dimensions
     cellh: 0
@@ -69,3 +69,7 @@ class window.Grid
         right = @getcy x2
 
         (this[i][j] for j in [top..bottom] for i in [left..right])
+    
+    getAllCells: ->
+        [].concat (cell for cell in row for own column, row of this when isNumeric(column))...
+                

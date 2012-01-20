@@ -1,21 +1,19 @@
 #init.coffee: When DOM loads, setup canvas stuff and boot the game
 
-document.addEventListener('DOMContentLoaded', ->
+init = ->
+    document.removeEventListener('DOMContentLoaded', init, false) #cleanup
     frameTimer = getTime() #keep track of when frames should execute
-	
-    #register step-flow events
-    Trigger.addTrigger 'step'
 	
     #define Viewport singleton
     window.Viewport = new class extends Surface
-        display = document.getElementById('display')
+        canvas = document.getElementByElement('canvas')[0]
         constructor: ->
             super
                 pos: null
                 view: $V [0,0]
-                width: display.width
-                height: display.height
-                context: display.getContext('2d')
+                width: canvas.width
+                height: canvas.height
+                context: canvas.getContext('2d')
                 destination: no
                 draw: -> #todo: start dropping frames if the time gap gets too big
                     @render()
@@ -41,12 +39,14 @@ document.addEventListener('DOMContentLoaded', ->
     
     #boot game
     Viewport.boot = include 'main'
-    do step = -> #main loop
+    
+    #main loop
+    do step = ->
         #step
         Trigger.fireTrigger 'step'
         
         #increment time
-        Trigger.tick()
+        Context.tick()
         
         frameTimer += Viewport.frameLength
         currentTime = getTime()
@@ -54,4 +54,4 @@ document.addEventListener('DOMContentLoaded', ->
         frameTimer = currentTime-500 if frameTimer-currentTime < -500 #limit lag catch-up to 10 frames
         pauseTime = frameTimer-currentTime
         setTimeout(step, if pauseTime <= 1 then 1 else pauseTime)
-, false)
+document.addEventListener('DOMContentLoaded', init, false)

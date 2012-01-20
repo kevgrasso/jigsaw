@@ -49,12 +49,11 @@
 #
 #OTHER:
 #pause on Window losing focus (throttle framerate to 2fps or lower)
-#playing same file multiple times
 
 #BUGS:
 #test won't register collision if y ~= 255
 
-Viewport.setFrameLength 50
+Viewport.setFrameLength 100
 Input.setKeys
     w: 87
     s: 83
@@ -113,7 +112,7 @@ grid = new CollisionGrid
     cellw: 120
     cellh: 125
 
-    context: 'global'
+    state: 'global'
     priority: 85
 
 player = new class extends Actor
@@ -145,7 +144,7 @@ player = new class extends Actor
                     width: 40
                     height: 80
         trigSpec =
-            context: 'global'
+            state: 'global'
             obj: this
             priority: 50
 

@@ -1,5 +1,20 @@
 #dataclasses.coffee: classes for various data types
 
+#class window.Vector
+#    constructor: (@x, @y) ->
+#    @zero = -> new this(0, 0)
+#    
+#    @precision = 1e-6
+#    @setPrecision = (@precision) ->
+#    
+#    x: 0
+#    y: 0
+#
+#window.$V = Vector
+
+class window.Polygon
+    constructor: ->
+
 #binary heap class
 class window.BinaryHeap
     constructor: (@scoreName, @content = []) ->         #this class mostly written by Marijn Haverbeke:

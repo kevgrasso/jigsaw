@@ -1,33 +1,33 @@
 #collsionclasses.coffee: collision-related classes
-
+    
 #ties together sprites and shapes for coherent movement
 class window.Actor
     constructor: (spec) ->
-        @pos = spec.pos ? Vector.Zero(2)
+        {pos, sprites, shapes, grid, top, bottom, left, right} = spec
+        @pos = pos ? Vector.Zero(2)
 
         @sprites = {}
-        if spec.sprites?
-            for own k, v of spec.sprites
+        if sprites?
+            for own k, v of sprites
                 v.parent = this;
                 @sprites[k] = new Sprite(v)
         @shapes = {}
-        if spec.shapes?
-            for own k, v of spec.shapes
+        if shapes?
+            for own k, v of shapes
                     v.parent = this
                     @shapes[k] = Shape.create(v)
 
-        @grid = spec.grid if spec.grid
+        @grid = grid if grid
 
         @moveQueue = [].extend
             pushRel: (vector) ->
                 @push {rel: vector.dup()}
             pushAbs: (vector) ->
                 @push {abs: vector.dup()}
-        @top = spec.top ? 0
-        @bottom = spec.bottom ? 0
-        @left = spec.left ? 0
-        @right = spec.right ? 0
-        @extend spec.attrib if spec.attrib
+        @top = top ? 0
+        @bottom = bottom ? 0
+        @left = left ? 0
+        @right = right ? 0
 
         @dimAdjust()
     
@@ -237,40 +237,37 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
                     shape2.parent[func]?(shape1)
         checklist[key] = true   #mark that we've tested these shapes
     
-    #iterates over shapes of both lists
-    iterateShapes = (list1, list2, func, swapped) ->
-        checklist = {}  #contains every potential collision tested
-        #used to prevent two objects from colliding muliple times
-
-        #we can do fewer tests if we're testing a list against itself
-        if list2?
-            #test every shape in list1 against every shape in list2
-            for v in list1
-                shape1 = v.data;
-
-                for w in list2
-                    shape2 = w.data;
-
-                    unless swapped
-                        testShapes(shape1, shape2, func, checklist)
-                    else
-                        testShapes(shape2, shape1, func, checklist)
-        else
-            #test every possible combination of shapes
-            for i in [0...list1.length-1]
-                shape1 = list1[i].data
+    #iterates over shapes of single list
+    iterateShapeSingle = (list1, func, checklist) ->
+        
+        #test every possible combination of shapes
+        for i in [0...list1.length-1]
+            shape1 = list1[i].data
+            
+            for j in [i+1...list1.length]
+                shape2 = list1[j].data
                 
-                for j in [i+1...list1.length]
-                    shape2 = list1[j].data
+                testShapes(shape1, shape2, func, checklist)
+        undefined
+    
+    #iterates over shapes of two lists
+    iterateShapePair = (list1, list2, func, checklist) ->
+        
+        #test every shape in list1 against every shape in list2
+        for v in list1
+            shape1 = v.data;
 
-                    unless swapped
-                        testShapes(shape1, shape2, func, checklist)
-                    else
-                        testShapes(shape2, shape1, func, checklist)
+            for w in list2
+                shape2 = w.data;
+                
+                testShapes(shape1, shape2, func, checklist)
         undefined
     
     #processes groups into lists
     processGroups = (grid, group1, group2, func) ->
+        checklist = {}  #contains every potential collision tested
+            #used to prevent two objects from colliding muliple times
+        
         if typeof group1 is 'string'
             pool = group1
         else if typeof group2 is 'string'
@@ -291,15 +288,12 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
                         list2 = cell.shapes[group2]
                     else
                         list2 = [{data: group2}]
-
-                    if list1.length <= list2.length
-                        iterateShapes(list1, list2, func, false)
-                    else
-                        iterateShapes(list2, list1, func, true)
+                    
+                    iterateShapePair(list1, list2, func, checklist)
                 else if list1.length >= 2
-                    iterateShapes(list1, null, func, false)
+                    iterateShapeSingle(list1, func, checklist)
         else
-            iterateShapes(group1, group2, func, false)
+            iterateShapes(group1, group2, func, checklist)
         undefined
 
     #public
@@ -335,10 +329,21 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
     
     #remove collision from list
     removeCollision: (pool1, pool2) ->
-        for v, i in @collisions when v.pool1 is pool1 and v.pool2 is pool2
-            @collisions.splice(i, 1)
+        for collision, pos in @collisions when collision.pool1 is pool1 and collision.pool2 is pool2
+            @collisions.splice(pos, 1)
             break
         undefined
+    
+    deregisterByObject: (object) ->
+        for cell in @getAllCells()
+            for own pool in cell
+                for shape in pool where shape.parent is object or shape is object
+                    cell.deregister(shape)
+                    
+    deregisterByPool: (pool) ->
+        for cell in @pools[pool]
+            for shape in cell.shapes[pool]
+                cell.deregister(shape)
     
     #check if there is a collision between group1 and group2
     getCollisions: (group1, group2) ->

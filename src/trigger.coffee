@@ -1,14 +1,40 @@
 #trigger.coffee: trigger singleton definition
 
+window.StateMachine = new class
+    stateBuffer = {} #state of active states next tick
+    activeStates = {} #contains all active states
+    frameCount: {} #number of frames each state has been active
+    
+    #activates given state
+    activate: (state) ->
+        stateBuffer[state] = on
+        @frameCount[state] ?= 0
+    
+    #deactivates given context
+    deactivate: (state) ->
+        delete stateBuffer[state]
+    
+    check: (statelist, contextLock, stateBlacklist) ->
+        statelist = [statelist] if typeof statelist is 'string'
+        
+        for own state in statelist when activeState[state]? and (not stateLock? or (stateLock is state and not stateBlacklist[state]?))
+            return true
+    
+    #increments frameCount
+    tick: ->
+        activeStates = stateBuffer.clone()
+        @frameCount[state] += 1 for own state of activeState
+        undefined
+StateMachine.activate 'global' #defines global context
+
 window.Trigger = new class
     #hidden
-    triggerlist = {} #list of subscriptions by trigger name and order of priority
-    contextstate = {} #contains all active contexts
+    triggerLists = {} #list of subscriptions by trigger name and order of priority
     entries = {} #shortcut to subscription info by function id
     
     #parses subscription data, manages timers and calls functions if has active context
-    parseEntry = (entry, trigger, context, args...) ->
-        for v in entry.context when contextstate[v]? and (not context? or context is v)
+    parseEntry = (entry, trigger, args, stateLock, stateBlacklist) ->
+        if StateMachine.check(entry.state, stateLock, stateBlacklist)
             #timer code
             if entry.timerCount?
                 entry.timerCount -= 1
@@ -23,39 +49,21 @@ window.Trigger = new class
             argList = entry.autoArgs?.concat(args) ? args
             #call the function. if there is an object specified, make it the thisobj
             unless entry.obj?
-                entry.func.apply(null, argList)
+                entry.func(argList...)
             else
                 entry.func.apply(entry.obj, argList)
             undefined
 
     #public
-
-    frameCount: {} #number of frames each context has been active
     
     #creates trigger and readies it for subscription
     addTrigger: (trigger) ->
-        @removeTrigger trigger if triggerlist[trigger]?
-        triggerlist[trigger] = new BinaryHeap 'priority'
+        triggerLists[trigger] = [] unless triggerLists[trigger]?
     
     #deletes a trigger
     removeTrigger: (trigger) ->
-        #todo: remove all entries from entries
-        
-        delete triggerlist[trigger]
-    
-    #activates given context
-    contextOn: (context) ->
-        contextstate[context] = on
-        @frameCount[context] ?= 0
-    
-    #deactivates given context
-    contextOff: (context) ->
-        delete contextstate[context]
-    
-    #increments frameCount
-    tick: ->
-        @frameCount[k] += 1 for own k of contextstate
-        undefined
+        @unsubscribe(i.trigger, i.func, i.trigID) for t in triggerLists #removes all from entries
+        delete triggerLists[trigger]
     
     #clears all entries or all entries of a given context
     clear: (context) ->
@@ -66,21 +74,27 @@ window.Trigger = new class
         undefined
 
     #subcribes function to trigger
-    # spec is an object with the following attributes:
-    #   trigger
+    #   trigger and func are the only required attributes in spec
     subscribe: (spec) ->
-        {trigger, func, triggerId, timerType, timerLength, autoArgs, context} = spec
+        {trigger, func, state, triggerId, timerType, timerLength, autoArgs} = spec
         trigger = [trigger] unless Array.isArray trigger
+        
+        if typeof state is 'string'
+            spec.state = [state]
+        else if not state?
+            spec.state = ['global']
+        #in case no auto-args are given
+        spec.autoArgs = [] unless autoArgs
 
         for v in trigger
             id = v+func.getID()+'#'+triggerId
             unless entries[id]?
                 entries[id] = spec
-                triggerlist[v].push spec
+                triggerLists[v].push spec
             else
                 entries[id].extend spec
 
-            if timerLength?                
+            if timerType?                
                 spec.timerCount = timerLength
                 switch timerType #error detection
                     when 'timeout', 'continuous', 'loop'
@@ -88,36 +102,41 @@ window.Trigger = new class
                             throw new Error "Timer not on 'step' ('#{v}')"
                     else
                         throw new Error("spec.timerType is #{timerType}")
-
-            spec.context = [context] if typeof context is 'string'
-            #in case no auto-args are given
-            spec.autoArgs = [] unless autoArgs
-
+        
         func
     
     #unsubscribe function from trigger
     unsubscribe: (trigger, func, triggerId) ->
         trigger = [trigger] unless Array.isArray trigger
-
+        
         for v in trigger
             id = v+func.getID()+'#'+triggerId
-            triggerlist[v].remove entries[id]
+            triggerLists[v].splice(triggerLists[v].indexOf(entries[id]), 1)
             delete entries[id]
         undefined
+        
+    unsubscribeByState: (state) ->
+        for own list of triggerLists
+            for entry in list when entry.state is state
+                @unsubscribe(entry.trigger, entry.func, entry.triggerID)
+    unsubscribeByObject: (object) ->
+        for own list of triggerLists
+            for entry in list when entry.obj is object
+                @unsubscribe(entry.trigger, entry.func, entry.triggerID)
+    
+    #private function for ranking two given objs by priority
+    entryCompare = (a, b) ->
+        a.priority - b.priority
     
     #fires entries with given trigger and an active context
     fireTrigger: (trigger, args...) ->
-
         if typeof trigger is 'object' and trigger?
-            {name:trigger, context} = trigger
-
-        triggerCopy = triggerlist[trigger]?.copy()
-        return unless triggerCopy?
-
-        loop
-            i = triggerCopy.pop() #todo: simplify
-            break unless i?
-
-            parseEntry(i, trigger, context, args)
+            {name:trigger, stateLock, stateBlacklist} = trigger
+        
+        triggerList = triggerLists[trigger]
+        return unless list?
+        triggerList.sort(entryCompare)
+        
+        parseEntry(entry, trigger, args, stateLock, stateBlacklist) for entry in triggerList.clone()
         undefined
-Trigger.contextOn 'global' #defines global context
+Trigger.addTrigger 'step' #register step-flow event

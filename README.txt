@@ -43,21 +43,24 @@ Internet Explorer 9+
 
 ~ROADMAP~
 0.3:
-*layers have contexts
-*setKeys removes subscriptions to keys not a part of new key set
-*Function::subscribeTo
-*Actor::attach(subscribe = true)
-*mass unsubscription for contexts, objs, groups, parents (collision, triggers, contextbuffer)
-*game loop is entirely triggers
-*change binary heaps to sorted array. option for sorting every frame + manual adjust order (sets adjustFrame = true)
-*use linked list (w/ shared attrib) for tile-shape subscription
+-layers have contexts
+-setKeys removes subscriptions to keys not a part of new key set
+-mass unsubscription for contexts, objs, groups, parents (collision, triggers, surface)
+-change binary heaps to sorted arrays
 *shapes rewritten + using new collision formula
-*SimpleCollision
+-new LoadTracker class
+-Pixastic library removed
+-stateBlacklist for Trigger.fireTrigger-- hold inputs won't fire multiple times
+-collisions won't detect intersections multiple times
 
 0.4:
 *MetaLayer::getAbsPosOf(Vector)
 *collision::getPointData()
 *mouse input
+*Actor::attach(subscribe = true)
+*init moved to Context
+*grid is spatial hash
+*SimpleCollision
 
 upcoming:
 *map display
@@ -65,12 +68,13 @@ upcoming:
 *map load
 *map events
 *map dynamic block definitions
-*gamestate saving + loading
+*loadtracker is mass loader
 *Dialog
-*sound
-*context buffers have context controls
+*sound mixer
+*surfaces have canvas context controls
 *animation
 *multi-grids
+*use linked list (w/ shared attrib) for tile-shape subscription
 *extended sound
 *map editor
 *A* search?
