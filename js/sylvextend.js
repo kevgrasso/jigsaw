@@ -4,12 +4,19 @@
 
 //Creates Vector with given angle and length
 Vector.Angle = function (theta, len) {
-	 return (Vector.create([len*Math.cos(theta), len*Math.sin(theta)]))
+ return (Vector.create([len*Math.cos(theta), len*Math.sin(theta)]))
 };
-//returns Vector's angle
-Vector.prototype.getAngle = function () {
-	return Math.atan2(this.elements[1], this.elements[0]);
+//returns Vector's angle in radians
+Vector.prototype.getRadians = function () {
+ return Math.atan2(this.elements[1], this.elements[0]);
 };
+//returns Vector's angle in degrees
+Vector.prototype.getDegrees = function () {
+ return this.getRadians()*180/Math.PI
+};
+Vector.prototype.getSlope = function () {
+ return this.elements[1]/this.elements[0]
+}
 //returns x coordinate
 Vector.prototype.getX = function () {
  return this.elements[0];
@@ -28,9 +35,9 @@ Vector.prototype.toAngle = function (theta) {
  return (Vector.create([mod*Math.cos(theta), mod*Math.sin(theta)]))
 };
 //returns Vector sized to given length
-Vector.prototype.toLength = function (len) {
- var theta = this.getAngle();
- return (Vector.create([len*Math.cos(theta), len*Math.sin(theta)]))
+Vector.prototype.toMagnitude = function (len) {
+ var theta = this.getRadians();
+ return (this.toUnitVector().multiply(len))
 };
 
 //creates Identity Matrix
