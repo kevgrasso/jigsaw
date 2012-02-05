@@ -6,7 +6,7 @@ init = ->
 	
     #define Viewport singleton
     window.Viewport = new class extends Surface
-        canvas = document.getElementByElement('canvas')[0]
+        canvas = document.getElementsByTagName('canvas')[0]
         constructor: ->
             super
                 pos: null
@@ -46,7 +46,7 @@ init = ->
         Trigger.fireTrigger 'step'
         
         #increment time
-        Context.tick()
+        StateMachine.tick()
         
         frameTimer += Viewport.frameLength
         currentTime = getTime()

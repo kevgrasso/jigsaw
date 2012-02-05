@@ -3,7 +3,7 @@
 #base layer class for subscribing to destination and displaying graphics on request
 class window.Layer
     constructor: (spec) ->
-        {@draw, @depth, destination} = spec
+        {@draw, @depth, @state, destination} = spec
 
         unless destination is no
             delete destination if not destination?
@@ -42,67 +42,67 @@ class window.Sprite extends Layer
 #composites subscribed layers and draws to destination
 class window.Surface extends Layer#todo: ContextBuffer.getAbsPosOf(Vector)
     constructor: (spec) -> 
-        {@pos, @viewpos, @height, @width, images, context} = spec
+        {@pos, @viewpos, @height, @width, layers, context} = spec
         super(spec)
 
         @context = context ? createFramebuffer(@width, @height)
 
-        @images = []
-        @imglist = {}
+        @layers = []
+        @layerList = {}
 
-        @setImages(images) if images
+        @setLayers(layers) if layers?
     
     pos: null #position of layer relative to destination viewport camera
     viewpos: null #viewport camera
 
     context: null #2d canvas drawing context
-    width: 0 
+    width: 0
     height: 0
 
-    images: null #ordered list of layers
+    layers: null #ordered list of layers
     
     #add layer to list
-    subscribe: (image) ->
-        unless image.context?
-            image.context = ['global']
-        @images.push image
+    subscribe: (layer) ->
+        unless layer.state?
+            layer.state = ['global']
+        @layers.push layer
     
     #remove layer from list
-    unsubscribe: (image) ->
-        @images.remove(image)
+    unsubscribe: (layer) ->
+        @images.remove(layer)
         
     unsubscribeByObject: (object) ->
-        for image in @images where image.parent is object or image is object
+        for layer in @layers where layer.parent is object or layer is object
             @unsubscribe(image)
     unsubscribeByState: (state) ->
-        for image in @images where image.state is state
-            @unsubscribe(image)
+        for layer in @layers where entry.state.indexOf(state) is 0 and entry.state.length is 1
+            @unsubscribe(layer)
     
     #returns entire set of layers
-    getImages: ->
-        @images
+    getLayers: ->
+        @layers
     
     #replaces list of images with given set
-    setImages: (@images) ->
+    setLayers: (@layers) ->
     
     #splices given set into list of layers
-    addImages: (images) ->
-        @images.push(i) for i in images
+    addLayers: (layers) ->
+        @images.push(layer) for layer in layers
     
     #empty layer set
-    clrImages: ->
-        @images = []
+    clrLayers: ->
+        @layers = []
     
-    #private function for ranking two given objs by priority
-    compare = (a, b) ->
-        a.priority - b.priority
+    #private function for ranking two given layers by priority
+    layerCompare = (layerA, layerB) ->
+        layerA.priority - layerB.priority
     
     #composite images (should be called from draw())
     render: ->
-        c = @context
+        context = @context
         
-        @images.sort(compare)
-        for i in @images.clone() when StateMachine.check(image.state)?
-            c.save()
-            i.draw(c, @viewX, @viewY)
-            c.restore()
+        @layers.sort(layerCompare)
+        for layer in @layers.clone() when StateMachine.check(layer.state)?
+            context.save()
+            layer.draw(context, @viewX, @viewY)
+            context.restore()

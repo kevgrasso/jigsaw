@@ -2,73 +2,73 @@
 
 #default cell
 class window.Cell
-    constructor: (@grid, @cx, @cy) ->
-        @x1 = cx*@grid.cellw
-        @y1 = cy*@grid.cellh
-        @x2 = cx*(@grid.cellw+1)
-        @y2 = cy*(@grid.cellh+1)
+    constructor: (@grid, @gridX, @gridY) ->
+        @top = gridY*@grid.cellHeight
+        @bottom = (gridY+1)*@grid.cellHeight
+        @left = gridX*@grid.cellWidth
+        @right = (gridX+1)*@grid.cellWidth
     
     grid: null #grid which cell is a part of
     
     #position in grid array
-    cx: 0
-    cy: 0
+    gridX: 0
+    gridY: 0
     
     #absolute coordinates of borders
-    x1: 0	#left
-    y1: 0	#top
-    x2: 0	#right
-    y2: 0	#bottom
+    top: 0
+    bottom: 0
+    left: 0
+    right: 0
     
     #get cell by relative position
-    getRelCell: (relx, rely) ->
-        @grid[@cx+relx][@cy+rely] ? null
+    getRelCell: (relX, relY) ->
+        @grid[@gridX+relX]?[@gridY+relY] ? null
 
 #chops coordinate space into Cells
 class window.Grid
     constructor: (spec) ->
         {@cell} = spec if spec.cell?
-        {@gridw, @gridh, @cellw, @cellh} = spec
+        {@gridWidth, @gridHeight, @cellWidth, @cellHeight} = spec
 
-        for i in [0..@gridw/@cellw]
-            this[i] = []
-            this[i][j] = new @cell(this, i, j) for j in [0..@gridh/@cellh]
+        for gridX in [0..@gridWidth/@cellWidth]
+            column = this[gridX] = []
+            column[gridY] = new @cell(this, gridX, gridY) for gridY in [0..@gridHeight/@cellHeight]
 
     cell: Cell #type of cell used in grid
 
     #cell dimensions
-    cellh: 0
-    cellw: 0
+    cellHeight: 0
+    cellWidth: 0
     #grid dimensions
-    gridh: 0
-    gridw: 0
+    gridHeight: 0
+    gridWidth: 0
     
     
     #converts absolute coords to their corresponding position in the grid array
     getCX: (x) ->
-        Math.floor x/@cellw
+        Math.floor x/@cellWidth
     getCY: (y) ->
-        Math.floor y/@cellh
+        Math.floor y/@cellHeight
     
     #returns cell at given position
     getCellAt: (pos) ->
-        cellx = @getCX(pos.getX())
-        celly = @getCY(pos.getY())
+        cellX = @getCX(pos.getX())
+        cellY = @getCY(pos.getY())
         
-        this[cellx]?[celly] ? null
+        this[cellX]?[cellY] ? null
     
     #returns cell at given xy coordinate
     getCellXY: (x, y) ->
         this[@getCX(x)]?[@getCY(y)] ? null
     
     #returns cells containing given bounds
-    getCellArray: (x1, y1, x2, y2) ->
-        top = @getcy y1
-        bottom = @getcy y2
-        left = @getcy x1
-        right = @getcy x2
+    getCellArray: (xLeft, xRight, yTop, yBottom) ->
+        gridLeft = @getCX xLeft
+        gridRight = @getCX xRight
+        gridTop = @getCY yTop
+        gridBottom = @getCY yBottom
 
-        (this[i][j] for j in [top..bottom] for i in [left..right])
+        (this[x][y] for y in [gridTop..gridBottom] for x in [gridLeft..gridRight])
     
     getAllCells: ->
         [].concat (cell for cell in row for own column, row of this when isNumeric(column))...

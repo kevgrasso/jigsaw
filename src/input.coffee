@@ -1,10 +1,9 @@
 #input.coffee: input singleton definition
 
 window.Input = new class
-    #hidden vars
-    bStream = off #boolean controlling whether keystream gets tracked
+    keystreamActive = off #boolean controlling whether keystream gets tracked
     keystream = [] #list of keypress events since last polled
-    inputs = {} #data for all active inputs and registrations
+    inputData = {} #data for all active inputs and registrations
     keyList = {} #list of keynames attached to key's keycode #don't like this comment or next, redo
     keyTriggers = {} #all registerable key triggers attached to the plain keyname
     interval = 4 #length of time in frames for key tap to become held key
@@ -18,40 +17,40 @@ window.Input = new class
             if Input.repeat[keyname] is 'tap'
                 Trigger.fireTrigger {
                     name:"#{keyname}TapAndHold"
-                    stateLock: stateLock
-                    stateBlacklist: stateBlacklist
+                    stateLock
+                    stateBlacklist
                 }, keyname
             else
                 Trigger.fireTrigger {
                     name:"#{keyname}HoldAndHold"
-                    stateLock: stateLock
-                    stateBlacklist: stateBlacklist
+                    stateLock
+                    stateBlacklist
                 }, keyname
             Trigger.fireTrigger {
                 name:"#{keyname}PressAndHold"
-                stateLock: stateLock
-                stateBlacklist: stateBlacklist
+                stateLock
+                stateBlacklist
             }, keyname
         Trigger.fireTrigger {
             name:"#{keyname}Hold"
-            stateLock: stateLock
-            stateBlacklist: stateBlacklist
+            stateLock
+            stateBlacklist
         }, keyname
         stateBlacklist[stateLock] = true
         
         #so uphandle doesn't unsubscribe from a nonexistent trigger
-        delete inputs[keyList[keyname]].holdIDList[state]
+        delete inputData[keyList[keyname]].holdIDList[stateLock]
     
     #handles key down events
-    downhandle = (e) ->
-        keyname = inputs[e.keyCode]?.keyname
-        e.preventDefault()
-        e.stopImmediatePropagation()
+    downhandle = (event) ->
+        keyname = inputData[event.keyCode]?.keyname
+        event.preventDefault()
+        event.stopImmediatePropagation()
         
         #only handle true keydown-- ignore further key presses
         if keyname? and not Input.state[keyname]
             Input.state[keyname] = on
-            Input.timeOf[keyname+'Down'] = Trigger.frameCount.global
+            Input.timeOf[keyname+'Down'] = StateMachine.frameCount.global
             
             #determine which triggers need to be fired
             if Input.lastkey is keyname and Input.getKeyTime(keyname, 'up') <= interval
@@ -70,32 +69,32 @@ window.Input = new class
             
             #set up hold timer for all relevant states
             stateBlacklist = {} #provide the same blacklist to all so it can be updated
-            for own k of inputs[e.keyCode].holdStateList
-                triggerId = getUniqueNum()
-                inputs[e.keyCode].holdIDList[k] = triggerId
+            for own state of inputData[event.keyCode].holdStateList
+                triggerID = getUniqueNum()
+                inputData[event.keyCode].holdIDList[state] = triggerID
                 Trigger.subscribe {
                     trigger: 'step'
-                    state: k
-                    triggerId: triggerId
+                    state: state
+                    triggerID: triggerID
                     func: holdhandle
-                    autoArgs: [keyname, k, stateBlacklist]
+                    autoArgs: [keyname, state, stateBlacklist]
                     priority: -Infinity
                     timerType: 'timeout'
                     timerLength: interval
                 }
             Input.lastkey = keyname ? Input.lastkey
-        if bStream is on
+        if keystreamActive is on
             keystream.unshift(keycode)
-            Trigger.fireTrigger('keystroke', keystream) if bTrigger
+            Trigger.fireTrigger('keystroke', keystream) if keystreamTriggering
     
     #handles key lift events
-    uphandle = (e) ->
-        keyname = inputs[e.keyCode]?.keyname
-        e.preventDefault()
-        e.stopImmediatePropagation()
+    uphandle = (event) ->
+        keyname = inputData[event.keyCode]?.keyname
+        event.preventDefault()
+        event.stopImmediatePropagation()
 
         Input.state[keyname] = off
-        Input.timeOf[keyname+'Up'] = Trigger.frameCount.global
+        Input.timeOf[keyname+'Up'] = StateMachine.frameCount.global
         
         #determine which triggers need to be fired
         if Input.repeat is yes
@@ -123,10 +122,10 @@ window.Input = new class
         Trigger.fireTrigger "#{keyname}Up", keyname
 
 
-        if inputs[e.keyCode]?
-            for own k, v of inputs[e.keyCode].holdIDList #cancel all pending hold triggers
-                Trigger.unsubscribe('step', holdhandle, v)
-                delete inputs[e.keyCode].holdIDList[k]
+        if inputData[event.keyCode]?
+            for own state, triggerID of inputData[event.keyCode].holdIDList #cancel all pending hold triggers
+                Trigger.unsubscribe('step', holdhandle, triggerID)
+                delete inputData[event.keyCode].holdIDList[state]
         undefined
     
     #processes a keyboard registration
@@ -135,14 +134,14 @@ window.Input = new class
         keycode = keyList[keyname]
 
         #if key not in inputs, add it and create all neccessary attributes.
-        unless inputs[keycode]?
-            inputs[keycode] = {}
-            inputs[keycode].keycode = keycode
-            inputs[keycode].keyname = keyname
-            inputs[keycode].count = 1
-            inputs[keycode].trigger = {}
-            inputs[keycode].holdStateList = {}
-            inputs[keycode].holdIDList = {}
+        unless inputData[keycode]?
+            inputData[keycode] = {}
+            inputData[keycode].keycode = keycode
+            inputData[keycode].keyname = keyname
+            inputData[keycode].count = 1
+            inputData[keycode].trigger = {}
+            inputData[keycode].holdStateList = {}
+            inputData[keycode].holdIDList = {}
 
             Input.state[keyname] = false
             Input.timeOf["#{keyname}Down"] = 0
@@ -150,8 +149,8 @@ window.Input = new class
             Input.hold[keyname] = false
             Input.repeat[keyname] = false
         else
-            inputs[keycode].count += 1
-        triglist = inputs[keycode].trigger
+            inputData[keycode].count += 1
+        triglist = inputData[keycode].trigger
 
         #if registering a function
         if spec.func?
@@ -159,11 +158,11 @@ window.Input = new class
             if trigger.substr(trigger.length-4, 4) is 'Hold'
                 spec.state = [spec.state] if typeof spec.state is 'string'
 
-                for v in spec.state
-                    unless inputs[keycode].holdStateList[v]
-                        inputs[keycode].holdStateList[v] = 1
+                for state in spec.state
+                    unless inputData[keycode].holdStateList[state]
+                        inputData[keycode].holdStateList[state] = 1
                     else
-                        inputs[keycode].holdStateList[v] += 1
+                        inputData[keycode].holdStateList[state] += 1
 
             #if trigger not in triglist, add it and create its trigger. Otherwise, increment its count.
             if triglist[trigger]?
@@ -178,7 +177,7 @@ window.Input = new class
     keyboardUnregister = (spec, trigger) ->
         keyname = keyTriggers[trigger]
         keycode = keyList[keyname]
-        triglist = inputs[keycode].trigger
+        triglist = inputData[keycode].trigger
 
         if spec.func?
             #if a hold-type input, remove relevant states from holdStateLlist
@@ -186,29 +185,28 @@ window.Input = new class
 
                 spec.state = [spec.state] if typeof spec.state is 'string'
 
-                for v of spec.state
-                    inputs[keycode].holdStateList[v] -= 1
-                    if inputs[keycode].holdStateLlist[v] <= 0
-                        delete inputs[keycode].holdStateList[v]
+                for state of spec.state
+                    inputData[keycode].holdStateList[state] -= 1
+                    if inputData[keycode].holdStateLlist[state] <= 0
+                        delete inputData[keycode].holdStateList[state]
 
             #unsubcribe function from trigger
-            Trigger.unsubscribe(trigger, spec.func, spec.trigId)
+            Trigger.unsubscribe(trigger, spec.func, spec.triggerID)
 
             triglist[trigger] -= 1
             if triglist[trigger] <= 0
                 Trigger.removeTrigger trigger
                 delete triglist[trigger]
 
-        inputs[keycode].count -= 1
-        if inputs[keycode].count <= 0
-            delete inputs[keycode]
+        inputData[keycode].count -= 1
+        if inputData[keycode].count <= 0
+            delete inputData[keycode]
             delete Input.state[keyname]
             delete Input.timeOf["#{keyname}Down"]
             delete Input.timeOf["#{keyname}Up"]
             delete Input.hold[keyname]
             delete Input.repeat[keyname]
 
-    #public vars
     state: {}  #state of all keys in keyList
     timeOf: {} #time of last keyup/keydown for all keys in keyList
     hold: {}   #whether last keydown was tap or hold
@@ -219,137 +217,138 @@ window.Input = new class
     
     #activate keystream capturing
     streamOn: ->
-        bStream = on
+        keystreamActive = on
     
     #deactivate keystream capturing
     streamOff: ->
-        bStream = off
+        keyStreamActive = off
         keystream = []
     
     #returns and clears current keystream
     getStream: ->
-        keystream[0..]
+        keystream[0...keystream.length]
         keystream = []
     
     #returns time since last keyUp or keyDown
     getKeyTime: (key, state) ->
-        state = state.charAt(0).toUpperCase() + state[1..].toLowerCase() #capitalize
-        Trigger.frameCount.global-@timeOf[key+state]
+        state = state.charAt(0).toUpperCase() + state[1...state.length].toLowerCase() #capitalize
+        StateMachine.frameCount.global-@timeOf[key+state]
     
     #replace the master key list with a new key sets
     setKeys: (newList) ->
         keyList = newList
-
+        
         keyTriggers = {} #derive whitelist for key inputs
-        for own k of keyList
-            keyTriggers["#{k}Down"] = k
-            keyTriggers["#{k}UpTap"] = k
-            keyTriggers["#{k}Hold"] = k
-            keyTriggers["#{k}UpHold"] = k
-            keyTriggers["#{k}Up"] = k
-            keyTriggers["#{k}PressAndDown"] = k
-            keyTriggers["#{k}PressAndUpTap"] = k
-            keyTriggers["#{k}PressAndHold"] = k
-            keyTriggers["#{k}PressAndUpHold"] = k
-            keyTriggers["#{k}PressAndUp"] = k
-            keyTriggers["#{k}TapAndDown"] = k
-            keyTriggers["#{k}TapAndUpTap"] = k
-            keyTriggers["#{k}TapAndHold"] = k
-            keyTriggers["#{k}TapAndUpHold"] = k
-            keyTriggers["#{k}TapAndUp"] = k
-            keyTriggers["#{k}HoldAndDown"] = k
-            keyTriggers["#{k}HoldAndUpTap"] = k
-            keyTriggers["#{k}HoldAndHold"] = k
-            keyTriggers["#{k}HoldAndUpHold"] = k
-            keyTriggers["#{k}HoldAndUp"] = k
+        for own key of keyList
+            keyTriggers["#{key}Down"] = key
+            keyTriggers["#{key}UpTap"] = key
+            keyTriggers["#{key}Hold"] = key
+            keyTriggers["#{key}UpHold"] = key
+            keyTriggers["#{key}Up"] = key
+            keyTriggers["#{key}PressAndDown"] = key
+            keyTriggers["#{key}PressAndUpTap"] = key
+            keyTriggers["#{key}PressAndHold"] = key
+            keyTriggers["#{key}PressAndUpHold"] = key
+            keyTriggers["#{key}PressAndUp"] = key
+            keyTriggers["#{key}TapAndDown"] = key
+            keyTriggers["#{key}TapAndUpTap"] = key
+            keyTriggers["#{key}TapAndHold"] = key
+            keyTriggers["#{key}TapAndUpHold"] = key
+            keyTriggers["#{key}TapAndUp"] = key
+            keyTriggers["#{key}HoldAndDown"] = key
+            keyTriggers["#{key}HoldAndUpTap"] = key
+            keyTriggers["#{key}HoldAndHold"] = key
+            keyTriggers["#{key}HoldAndUpHold"] = key
+            keyTriggers["#{key}HoldAndUp"] = key
 
         keyList
     
     #processes an input registration
-    register: (spec) ->
-        throw new Error 'input request includes timer' if spec.timer ? spec.length? #sanity checking
+    register: (specs) ->
 
-        spec = [spec] unless Array.isArray spec #for multi-spec arrays
+        specs = [specs] unless Array.isArray specs #for multi-spec arrays
 
-        for v in spec
-            v.input = [v.input]unless Array.isArray v.input #for multi-input arrays
+        for spec in specs
+        
+            throw new Error 'input request includes timer' if spec.timer ? spec.length? #sanity checking
+            spec.input = [spec.input]unless Array.isArray spec.input #for multi-input arrays
 
-            for w in v.input
-                if keyTriggers[w]? #determine input type
-                    input = 'keyboard'
+            for input in spec.input
+                if keyTriggers[input]? #determine input type
+                    inputType = 'keyboard'
                 else
-                    input = w
+                    inputType = input
 
-                unless inputs[input]? #initial request preparation -- inputs object, event listeners, and triggers
-                    inputs[input] = { count: 1 }
+                unless inputData[inputType]? #initial request preparation -- inputs object, event listeners, and triggers
+                    inputData[inputType] = { count: 1 }
 
-                    switch input
+                    switch inputType
                         when 'keyboard'
                             document.addEventListener('keydown', downhandle, false)
                             document.addEventListener('keyup', uphandle, false)
                             break
                         else
-                            Trigger.addTrigger input
-                            inputs[input].func = (e) ->
+                            Trigger.addTrigger inputType
+                            inputData[inputType].func = (e) ->
                                 e.preventDefault()
                                 e.stopImmediatePropagation()
-                                @timeOf[input] = 0
+                                @timeOf[inputType] = 0
 
-                                Trigger.fireTrigger input, e
-                            document.addEventListener(input, inputs[input].func, false)
+                                Trigger.fireTrigger inputType, e
+                            document.addEventListener(inputType, inputData[inputType].func, false)
                 else
-                    inputs[input].count += 1
+                    inputData[inputType].count += 1
 
-                v.trigger = w #prep spec.trigger for subscription
-                switch input #handle triggers
+                spec.trigger = input #prep spec.trigger for subscription
+                switch inputType #handle triggers
                     when 'keyboard'
-                        keyboardRegister v, w
+                        keyboardRegister spec, input
                         break
                     else
-                        Trigger.subscribe v
+                        Trigger.subscribe spec
 
-            if v.func?
-                unless v.func.inputs
-                    v.func.inputs = [v]
+            if spec.func?
+                unless spec.func.inputs
+                    spec.func.inputs = [spec]
                 else
-                    v.func.inputs.push v
+                    spec.func.inputs.push spec
         if spec.length is 1
             spec[0].func ? spec[0]
         else
             spec
     
     #removes an input registration
-    unregister: (spec) ->
-        if typeof spec is 'function' #retrieve specs from function
-            spec = spec.func.inputs
+    unregister: (specs) ->
+        if typeof specs is 'function' #retrieve specs from function
+            specs = spec.func.inputs
         else unless Array.isArray spec #for multi-spec arrays
-            spec = [spec]
+            specs = [specs]
 
-        for v in spec
-            v.input = [v.input] unless Array.isArray spec.input #for multi-input arrays
+        for spec in specs
+            spec.input = [spec.input] unless Array.isArray spec.input #for multi-input arrays
 
-            for w in v.input
-                if keyTriggers[w]? #determine input type
-                    input = 'keyboard'
+            for input in spec.input
+                if keyTriggers[input]? #determine input type
+                    inputType = 'keyboard'
                 else
-                    input = w
+                    inputType = input
 
                 switch input #handle triggers
                     when 'keyboard'
-                        keyboardUnregister(v, w)
+                        keyboardUnregister(spec, input)
                         break
                     else
-                        Trigger.unsubscribe(w, v.func)
+                        Trigger.unsubscribe(input, spec.func)
 
-                inputs[input].count -= 1
-                if inputs[input] is 0 #if no remaining events, cleanup
-                    delete inputs[input]
+                inputData[inputType].count -= 1
+                if inputData[inputType] is 0 #if no remaining events, cleanup
+                    delete inputData[inputType]
 
-                    switch input
+                    switch inputType
                         when 'keyboard'
                             document.removeEventListener('keydown', downhandle, false)
                             document.removeEventListener('keyup', uphandle, false)
                             break
                         else
-                            Trigger.removeTrigger input
-                            document.removeEventListener(input, inputs[input].func, false)
+                            Trigger.removeTrigger inputType
+                            document.removeEventListener(inputType, inputData[inputType].func, false)

@@ -8,14 +8,14 @@ class window.Actor
 
         @sprites = {}
         if sprites?
-            for own k, v of sprites
-                v.parent = this;
-                @sprites[k] = new Sprite(v)
+            for own name, spec of sprites
+                spec.parent = this;
+                @sprites[name] = new Sprite(spec)
         @shapes = {}
         if shapes?
-            for own k, v of shapes
-                    v.parent = this
-                    @shapes[k] = Shape.create(v)
+            for own name, spec of shapes
+                    spec.parent = this
+                    @shapes[name] = new Shape(spec)
 
         @grid = grid if grid
 
@@ -45,62 +45,50 @@ class window.Actor
     left: 0
     right: 0
 
-    #absolute location of dimensions
-    x1: 0	#left
-    y1: 0	#top
-    x2: 0	#right
-    y2: 0	#bottom
-
     #cells containing the entity's corners
-    celltl: null
-    celltr: null
-    cellbl: null
-    cellbr: null
+    topLeftCell: null
+    topRightCell: null
+    bottomLeftCell: null
+    bottomRightCell: null
 
     #recalculates dimensions and reregisters shapes
     dimAdjust: ->
         grid = @grid
 
-        #calculate edges
-        @x1 = @left + @pos.getX()
-        @y1 = @top + @pos.getY()
-        @x2 = @right + @pos.getX()
-        @y2 = @bottom + @pos.getY()
-
-        if @grid?
-            #match each edge to a row or column on the grid
-            gridx1 = grid.getCX @x1
-            gridx2 = grid.getCX @x2
-            gridy1 = grid.getCY @y1
-            gridy2 = grid.getCY @y2
+        if grid?
+            #calculate each edge and match to a row or column on the grid
+            gridLeftX = grid.getCX @left + @pos.getX()
+            gridRightX = grid.getCX @right + @pos.getX()
+            gridTopY = grid.getCY @top + @pos.getY()
+            gridBottomY = grid.getCY @bottom + @pos.getY()
 
             #top left corner
-            if @celltl isnt grid[gridx1]?[gridy1] ? null
-                @celltl.deregister(this) if @celltl?
+            if @topLeftCell isnt grid[gridLeftX]?[gridTopY] ? null
+                @topLeftCell.deregister(this) if @topLeftCell?
 
-                @celltl = grid[gridx1]?[gridy1] ? null
-                @celltl.register(this) if @celltl?
+                @topLeftCell = grid[gridLeftX]?[gridTopY] ? null
+                @topLeftCell.register(this) if @topLeftCell?
 
             #bottom left corner
-            if @cellbl isnt grid[gridx1]?[gridy2] ? null
-                @cellbl.deregister(this) if @cellbl?
+            if @bottomLeftCell isnt grid[gridLeftX]?[gridBottomY] ? null
+                @bottomLeftCell.deregister(this) if @bottomLeftCell?
 
-                @cellbl = grid[gridx1]?[gridy2] ? null
-                @cellbl.register(this) if @cellbl?
+                @bottomLeftCell = grid[gridLeftX]?[gridBottomY] ? null
+                @bottomLeftCell.register(this) if @bottomLeftCell?
 
             #top right corner
-            if @celltr isnt grid[gridx2]?[gridy1] ? null
-                @celltr.deregister(this) if @celltr isnt null
+            if @topRightCell isnt grid[gridRightX]?[gridTopY] ? null
+                @topRightCell.deregister(this) if @topRightCell isnt null
 
-                @celltr = grid[gridx2]?[gridy1] ? null
-                @celltr.register(this) if @celltr?
+                @topRightCell = grid[gridRightX]?[gridTopY] ? null
+                @topRightCell.register(this) if @topRightCell?
 
             #bottom right corner
-            if @cellbr isnt grid[gridx2]?[gridy2] ? null
-                @cellbr.deregister(this) if @cellbr?
-
-                @cellbr = grid[gridx2]?[gridy2] ? null
-                @cellbr.register(this) if @cellbr?
+            if @bottomRightCell isnt grid[gridRightX]?[gridBottomY] ? null
+                @bottomRightCell.deregister(this) if @bottomRightCell?
+                
+                @bottomRightCell = grid[gridRightX]?[gridBottomY] ? null
+                @bottomRightCell.register(this) if @bottomRightCell?
     
     #precalculates result of next move from moveQueue
     getMove: (emptyQueue = false) ->
@@ -109,11 +97,11 @@ class window.Actor
 
         @moveQueue.reverse()
         loop
-            i = @moveQueue.pop()
-            break if not i?
+            movement = @moveQueue.pop()
+            break if not movement?
         
-            buffer = buffer.add i.rel if i.rel
-            buffer = i.abs if i.abs
+            buffer = buffer.add movement.rel if movement.rel
+            buffer = movement.abs if movement.abs
 
         @moveQueue.push {rel: buffer} unless emptyQueue
         buffer
@@ -141,24 +129,25 @@ class window.CollisionCell extends Cell
     #registers shapes of actor (or given shape) into cell+grid
     register: (obj) ->
         obj = {shapes: {obj}} if obj instanceof Shape
+        console.log(@gridX, @gridY)
         
-        for own k, v of obj.shapes
-            pool = v.pool
-            id = v.getID()
+        for own name, shape of obj.shapes
+            pool = shape.pool
+            id = shape.getID()
 
             if @shapelist[id]?
-                node = @shapes[pool][@shapelist[id]]
-                node.num += 1
+                record = @shapes[pool][@shapelist[id]]
+                record.num += 1
             else
-                node = {data: v, num: 1}
-                unless @shapes[pool]?
-                    @shapes[pool] = [node]
+                record = {shape, num: 1}
+                if not @shapes[pool]?
+                    @shapes[pool] = [record]
                     @shapelist[id] = 0
                 else
                     #Array::push returns new length of Array
-                    @shapelist[id] = @shapes[pool].push(node)-1
+                    @shapelist[id] = @shapes[pool].push(record)-1
 
-                unless @grid.pools[pool]?
+                if not @grid.pools[pool]?
                     @grid.pools[pool] = {}
                     @grid.poolcount[pool] = {count: 0}
                 
@@ -174,14 +163,14 @@ class window.CollisionCell extends Cell
     deregister: (obj) ->
         obj = {shapes: {obj}} if obj instanceof Shape
         
-        for own k, v in obj.shapes
-            id = v.getID()
-            pool = v.pool
+        for own name, shape of obj.shapes
+            id = shape.getID()
+            pool = shape.pool
             shapePos = @shapelist[id]
-            node = @shapes[pool][shapePos]
+            record = @shapes[pool][shapePos]
 
-            if node.num > 1
-                node.num -= 1
+            if record.num > 1
+                record.num -= 1
             else
                 @shapes[pool].splice(shapePos, 1);
                 delete @shapelist[id];
@@ -200,7 +189,7 @@ class window.CollisionCell extends Cell
 #grid for managing collisions
 class window.CollisionGrid extends Grid     #TODO: subgrids
     constructor: (spec) ->
-        {context, priority, trigID} = spec
+        {state, priority, trigID} = spec
         super(spec)
         
         @pools = {}
@@ -208,10 +197,10 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
 
         @collisions = []
 
-        if context? or priority?
-            unless (context? and priority?)
-                throw new Error 'CollisionCell not given context AND priority'
-            @subscribeTo(context, priority, trigID)
+        if state? or priority?
+            unless (state? and priority?)
+                throw new Error 'CollisionCell not given state AND priority'
+            @subscribeTo(state, priority, trigID)
     
     #private
     
@@ -228,24 +217,26 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
 
         #check if we've already checked these shapes, then,
         #if there is a collision, inform its actor
-        if not checklist[key] and shape1.isColliding shape2
-            switch typeof func
-                when 'function'
-                    func(shape1, shape2)
-                when 'string'
-                    shape1.parent[func]?(shape2)
-                    shape2.parent[func]?(shape1)
-        checklist[key] = true   #mark that we've tested these shapes
+        if not checklist[key]
+            value = shape1.isColliding shape2
+            if value isnt false
+                switch typeof func
+                    when 'function'
+                        func(shape1, shape2, value)
+                    when 'string'
+                        shape1.parent[func]?(shape2, value)
+                        shape2.parent[func]?(shape1, value)
+            checklist[key] = true   #mark that we've tested these shapes
     
     #iterates over shapes of single list
     iterateShapeSingle = (list1, func, checklist) ->
         
         #test every possible combination of shapes
-        for i in [0...list1.length-1]
-            shape1 = list1[i].data
+        for index1 in [0...list1.length-1]
+            shape1 = list1[index1].shape
             
-            for j in [i+1...list1.length]
-                shape2 = list1[j].data
+            for index2 in [index1+1...list1.length]
+                shape2 = list1[index2].shape
                 
                 testShapes(shape1, shape2, func, checklist)
         undefined
@@ -254,11 +245,11 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
     iterateShapePair = (list1, list2, func, checklist) ->
         
         #test every shape in list1 against every shape in list2
-        for v in list1
-            shape1 = v.data;
+        for record1 in list1
+            shape1 = record1.shape;
 
-            for w in list2
-                shape2 = w.data;
+            for record2 in list2
+                shape2 = record2.shape;
                 
                 testShapes(shape1, shape2, func, checklist)
         undefined
@@ -274,20 +265,17 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
             pool = group2
 
         if pool?
-            for own k of grid.pools[pool]
-                #set head to the head of pool's nodes
-                cell = grid.pools[pool][k]
-
+            for own cellID, cell of grid.pools[pool]
                 if typeof group1 is 'string'
                     list1 = cell.shapes[group1]
                 else
-                    list1 = [{data: group1}]
+                    list1 = [{shape: group1}]
 
                 if group2 and group1 isnt group2
                     if typeof group2 is 'string'
                         list2 = cell.shapes[group2]
                     else
-                        list2 = [{data: group2}]
+                        list2 = [{shape: group2}]
                     
                     iterateShapePair(list1, list2, func, checklist)
                 else if list1.length >= 2
@@ -355,6 +343,7 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
     #check all collisions on list
     step: ->
         processGroups(this, v.pool1, v.pool2, v.func) for v in @collisions
+        undefined
 
 #collision shape for attaching to actor
 class window.Shape
@@ -370,28 +359,34 @@ class window.Shape
         if @parent then @parent.pos.add(@vertices[index]) else @pos[index]
         
     getAbsVertices: ->
-        @getAbsVertices(index) for index in [0...@vertices.length]
+        @getAbsVertex(index) for index in [0...@vertices.length]
     
     #a lot of the following SAT collision testing code is by William of Code Zealot
     
-    getShapeAxes= (shape1, sharedData) ->
+    getShapeAxes= (shape, sharedData) ->
         #loop over the vertices
-        for vertex1, index in shape.getAbsVertices()
+        vertices = shape.vertices
+        for vertex1, index in vertices
             #get the next vertex
-            vertex2 = shape.vertices[index+1] ? shape.vertices[0]
+            vertex2 = vertices[index+1] ? vertices[0]
             
             #subtract the two to get the edge vector
             edge = vertex1.subtract vertex2
             #get either perpendicular vector
             normal = edge.perp()
-            #the perp method is just (x, y) => (-y, x) or (y, -x)
-            radians = normal.getAngle().toFixed(7)#7 is the default precision of sylvester
-            if sharedData[radians] then continue #don't angle push if it has already been tested
-            sharedData[radians] = true
-            normal
+            #normalize the axis
+            unit = normal.toUnitVector()
+            
+            #following optimization doesn't work right yet:
+            #degrees = normal.getDegrees().toFixed(7)#7 is the default precision of sylvester
+            #if sharedData[radians] #don't angle push if it has already been tested
+            #    sharedData[radians] = true
+            #    unit
+            #else
+            #    continue
         
     projectShape = (shape, axis) ->
-        vertices = shape.vertices
+        vertices = shape.getAbsVertices()
         min = max = axis.dot vertices[0]
         for vertex in vertices[1...]
             #NOTE: the axis must be normalized to get accurate projections
@@ -403,28 +398,28 @@ class window.Shape
         {min, max}
         
     getProjectionOverlap = ({min: min1, max: max1}, {min: min2, max: max2}) ->
-        if min1>max2
-            magnitude = min1-max2
-        else if min2<max1
-            magnitude = min2-max1
-        else
+        if min1 >= max2 or min2 >= max1
             return false
+        else if min1 < min2
+            magnitude = max1-min2
+        else
+            magnitude = max2-min1
         
         #check for containment
         if (min1 >= min2 and max1 <= max2) or (min1 <= min2 and max1 >= max2)
             #get the overlap plus the distance from the minimum end points
-            mins = abs projection1.min - projection2.min
-            maxs = abs projection1.max - projection2.max
+            deltaMin = Math.abs min1 - min2
+            deltaMax = Math.abs max1 - max2
             #NOTE: depending on which is smaller you may need to
             #negate the separating axis!!
-            magnitude += if mins < maxs then mins else maxs
+            magnitude += if deltaMin < deltaMax then deltaMin else deltaMax
         magnitude      
     
     testAxes = (shape1, shape2, sharedData) ->
         {minAngle, minMagnitude} = sharedData
     
         #loop over the axes
-        for axis in getShapeAxes shape1, shardedData
+        for axis in getShapeAxes shape1, sharedData
             #project both shapes onto the axis
             projection1 = projectShape shape1, axis
             projection2 = projectShape shape2, axis
@@ -446,14 +441,13 @@ class window.Shape
     #determines if shape is colliding with given shape
     isColliding: (otherShape) ->
         sharedData = {minAngle: null, minMagnitude: Infinity}
-        if not testAxis(this, otherShape, sharedData)
-            return false #value only continue tests if value is not false
+        if not testAxes(this, otherShape, sharedData)
+            return false #only continue tests if doesn't return false
         
-        if not testAxis(otherShape, this, sharedData)
+        if not testAxes(otherShape, this, sharedData)
             return false
         #if both return true then we know that every axis had overlap on it
         #so we can guarantee an intersection
         
-        
         {minAngle, minMagnitude} = sharedData
-        minAngle.toMagnitude(minMagnitude)
+        minAngle.multiply(minMagnitude)

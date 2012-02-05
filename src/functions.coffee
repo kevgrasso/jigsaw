@@ -15,51 +15,53 @@ document.head ?= document.getElementsByTagName('head')[0]
 
 
 #appends source object's attributes to the target object
-window.extend = (arg...) -> #([depth,] target, src1[, srcN])
-    if typeof arg[0] is 'bool'
-        {0:depth, 1: target, 2:src, 3:multi} = arg
+window.extend = (args...) -> #([depth,] target, src1[, srcN])
+    if typeof args[0] is 'boolean'
+        {0:depth, 1: target, 2:source, 3:moreSource} = args
+        nextSources = args[3...args.length]
     else
+        {0: target, 1:source, 2:moreSource} = args
         depth = false
-        {0: target, 1:src, 2:multi} = arg
+        nextSources = args[2...args.length]
     
-    target[k] = v for own k, v of src #normal copy
-    if multi?
-        arg.splice((unless depth then 1 else 2), 1)
-        extend(arg...) #remove src just copied
+    target[key] = value for own key, value of source #normal copy
+    if moreSource?
+        extend(depth, target, nextSources...) #remove src just copied
     target
 
 #loads and runs external script from /include/
 window.include = (filename) -> #TODO: allow hard refresh of scripts to be
     head = document.head       #      dynamically loaded
-    e = document.createElement('script')
+    scriptElement = document.createElement('script')
 
     cleanup = ->
         if @readyState is 'complete'
             #Plugs IE memory leak-- it's even there in IE9!
-            e.removeEventListener('onload', cleanup, false)
-            head.removeChild e
+            scriptElement.removeEventListener('onload', cleanup, false)
+            head.removeChild scriptElement
     #all browsers should call this when script is finished
     #and ready for cleanup
-    e.addEventListener('onload', cleanup, false)
+    scriptElement.addEventListener('onload', cleanup, false)
     
     #load script
-    e.type = 'application/javascript'
-    e.charset = 'utf-8'
-    e.src = "lib/include/#{filename}.js"
-    head.appendChild e
+    scriptElement.type = 'application/javascript'
+    scriptElement.charset = 'utf-8'
+    scriptElement.src = "lib/include/#{filename}.js"
+    head.appendChild scriptElement
 
 #creates and returns a new HTML Canvas context for drawing to/from
-window.createFramebuffer = (w, h) ->
-    canvas = document.createElement 'CANVAS'
-    canvas.setAttribute 'width', w
-    canvas.setAttribute 'height', h
+window.createFramebuffer = (width, height) ->
+    canvasElement = document.createElement 'CANVAS'
+    canvasElement.setAttribute 'width', width
+    canvasElement.setAttribute 'height', height
 
-    canvas.getContext '2d'
+    canvasElement.getContext '2d'
 
 #retrieves the current time in miliseconds
 window.getTime = ->
     (new Date()).getTime()
-    
+
+#returns whether arguement is a number or numeric string
 window.isNumeric = (num) ->
     not isNaN(parseFloat(num)) and isFinite(num)
 
@@ -97,33 +99,46 @@ Object::getID = -> #returns object's unique ID, generating it if neccessary
     @objectID
 
 #returns true if object has no contents
-Object::isEmpty = ->
+Object::isEmpty = (args...) ->
     exemptions = {}
 
-    exemptions[v] = true for v in arguments
-    return no for own k in this when not exemptions[k]
+    exemptions[key] = true for key in args
+    return no for own key in this when not exemptions[key]
     yes
 
 #returns true if given value is part of an object
 Object::hasValue = (value) ->
-    return yes for own k of this when this[k] is value
+    return yes for own key of this when this[key] is value
     no
 
 #returns first key found corresponding to a given value
 Object::getKey = (value) ->
-    return k for own k of this when this[k] is value
+    return key for own key of this when this[key] is value
     undefined
-    
+
+#returns duplicate of  the array
 Array::clone = ->
     @slice(0)
 
+#removes first instance of the given value from the array
 Array::remove = (value) ->
     @splice(@indexOf(value), 1)
+
+#mixes up order of values
+Array::randomize = ->
+    values = {}
+    order = []
+    for value in this
+        num = Math.random()
+        while values[num]? then num = Math.random()
+        values[num] = value
+        order.push(num)
+    order.sort()
+    for num, index in order
+        this[index] = values[num]
+        
+        
 
 #returns a random entry
 Array::getRandom = ->
     this[randomInt(0,@length-1)]
-
-#wipes the context blank
-CanvasRenderingContext2D::clear = ->
-    @clearRect 0, 0, @canvas.width, @canvas.height
