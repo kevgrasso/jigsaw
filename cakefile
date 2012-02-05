@@ -10,9 +10,10 @@ do ->
     watcher = null
     task 'watch', 'Watch src/ for changes', ->
         lastTime = 0
-        fs.watch 'src', (err, filename) ->
+        fs.watch 'src', (error, filename) ->
             now = (new Date).getTime()
-            unless lastTime is now
+            unless now - lastTime < 100
+                lastTime = now
                 console.log "#{(new Date).toLocaleTimeString()} Observed change in #{filename}"
                 invoke 'build'
         console.log 'Watching...'
