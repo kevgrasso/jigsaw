@@ -1,59 +1,7 @@
 #Jigsaw test
 #Kevin Grasso
 
-#next:
-#add callPointFunction for Input.updateMouse
-#cleanup shapes/fix ejectShape
-#cleanup sprite (SpriteLayer)
-#cleanup boot
-#finish Map functions
-#Input.updateMouse(): checks given CollisionGrid, either pushes SelfShape/MouseShape into Heap or checks out subgrid/viewport containing. BinaryHeap is made a
-#	attribute of Input. mouse events bubble down array until false is returned. do something about moveover/out.
-#	Trigger.subscribe(Shape.getTrigger('dblclick')) (based on ID)
-
-#---later---
-#
-#ENTITY:
-#any other changes to the moveQueue system (have map in mind)
-#multi-cell entities
-#
-#Input:
-#mouse
-#*mouseon
-#*mouseoff
-#*mouseover
-#*mousedown
-#*mouseup
-#*click (if mousedown over shape, then leave shape, doesn't count)
-#*doubleclick (both must be fast)
-#*drag
-#interval
-#lowup
-#lowdown
-#tap
-#doubletap
-#
-#MAPS:
-#MoveAlong (for walls too (for walljumps and grabbing ledges))
-#MoveAcross
-#
-#ENEMIES:
-#
-#ANIMATION:
-#
-#ACTOR:
-#
-#GRID:
-#multi-resolution cells
-#chunk loading/unloading
-#
-#OTHER:
-#pause on Window losing focus (throttle framerate to 2fps or lower)
-
-#BUGS:
-#test won't register collision if y ~= 255
-
-Viewport.setFrameLength 100
+Viewport.setFrameLength 1000/20
 Input.setKeys
     w: 87
     s: 83
@@ -80,37 +28,37 @@ Input.setKeys
     3: 51
 
 bgcolor = new Layer
-    draw: (c) ->
-        c.fillStyle = 'black'
-        c.fillRect(0, 0, Viewport.width, Viewport.height)
+    draw: (context) ->
+        context.fillStyle = 'black'
+        context.fillRect(0, 0, Viewport.width, Viewport.height)
     viewport: Viewport
     z:-1
 
 collide = no
 debug = new Layer
-    draw: (c) ->
-        c.fillStyle = 'white'
-        c.font = '12pt Arial'
+    draw: (context) ->
+        context.fillStyle = 'white'
+        context.font = '12pt Arial'
 
-        c.fillText("X:#{player.pos.getX()}", 0, 20)
-        c.fillText("Y:#{player.pos.getY()}",0, 40)
-        c.fillText("X:#{player.x1}", 200, 20)
-        c.fillText("Y:#{player.y1}", 200, 40)
-        c.fillText("X:#{player.grid.getCX player.x1}", 400, 20)
-        c.fillText("Y:#{player.grid.getCY player.y1}", 400, 40)
-        c.fillText("#{player.id}", 600, 20)
-        c.fillText("xspeed:#{player.xspeed}", 0, 60)
-        c.fillText("yspeed:#{player.yspeed}", 0, 80)
+        context.fillText("X:#{player.pos.getX()}", 0, 20)
+        context.fillText("Y:#{player.pos.getY()}",0, 40)
+        context.fillText("TL:#{player.topLeftCell?.gridX}, #{player.topLeftCell?.gridY}", 100, 20)
+        context.fillText("BL:#{player.bottomLeftCell?.gridX}, #{player.bottomLeftCell?.gridY}", 100, 40)
+        context.fillText("TR:#{player.topRightCell?.gridX}, #{player.topRightCell?.gridY}", 200, 20)
+        context.fillText("BR:#{player.bottomRightCell?.gridX}, #{player.bottomRightCell?.gridY}", 200, 40)
+        context.fillText("#{player.id}", 600, 20)
+        context.fillText("xspeed:#{player.xspeed}", 0, 60)
+        context.fillText("yspeed:#{player.yspeed}", 0, 80)
 
-        c.fillText('collision', 600, 20) if collide
+        context.fillText("eject:#{collide}", 600, 40)
     viewport: Viewport
     z:100
 
 grid = new CollisionGrid
-    gridw: 740
-    gridh: 500
-    cellw: 120
-    cellh: 125
+    gridWidth: 740
+    gridHeight: 500
+    cellWidth: 120
+    cellHeight: 125
 
     state: 'global'
     priority: 85
@@ -131,16 +79,17 @@ player = new class extends Actor
                 square:
                     pos: $V [-20, -80]
                     viewport: Viewport
-                    draw: (c, viewX, viewY, count) ->
-                        c.translate @parent.pos.getX(), @parent.pos.getY()
-                        c.fillStyle = 'white'
-                        c.fillRect(@pos.getX(), @pos.getY(), 20, 80)
+                    state: 'global'
+                    draw: (context, viewX, viewY, count) ->
+                        context.translate @parent.pos.getX(), @parent.pos.getY()
+                        context.fillStyle = 'white'
+                        context.fillRect(@pos.getX(), @pos.getY(), 40, 80)
 
             shapes:
                 bulk:
                     type: 'box'
                     pool: 'global'
-                    vertices: [$V([-20, -80]), $([20, -80]), $V([20, 0]), $V([-20, 0])]
+                    vertices: [$V([-20, -80]), $V([20, -80]), $V([20, 0]), $V([-20, 0])]
         trigSpec =
             state: 'global'
             obj: this
@@ -161,6 +110,18 @@ player = new class extends Actor
         Input.register trigSpec.clone
             input: 'rightUp'
             func: @ftRightStop
+        Input.register trigSpec.clone
+            input: 'upHold'
+            func: @ftUp
+        Input.register trigSpec.clone
+            input: 'upUp'
+            func: @ftUpStop
+        Input.register trigSpec.clone
+            input: 'downHold'
+            func: @ftDown
+        Input.register trigSpec.clone
+            input: 'downUp'
+            func: @ftDownStop
 
     velocity: Vector.Zero(2)
     
@@ -178,9 +139,17 @@ player = new class extends Actor
             @velocity = @velocity.add $V([4,0])
     ftRightStop:  ->
             @velocity = @velocity.subtract $V([4,0])
+    ftUp: ->
+            @velocity = @velocity.subtract $V([0,4])
+    ftUpStop: ->
+            @velocity = @velocity.add $V([0,4])
+    ftDown: ->
+            @velocity = @velocity.add $V([0,4])
+    ftDownStop:  ->
+            @velocity = @velocity.subtract $V([0,4])
 
 test = new Actor
-    pos: $V [150, 100]
+    pos: $V [120, 100]
 		
     grid: grid
 		
@@ -188,20 +157,20 @@ test = new Actor
         square:
             pos: $V [0, 0]
             viewport: Viewport
-            draw: (c, viewX, viewY, count) ->
-                c.translate @parent.pos.getX(), @parent.pos.getY()
-                c.fillStyle = 'white'
-                c.fillRect(@pos.getX(), @pos.getY(), 100, 20)
+            state: 'global'
+            draw: (context, viewX, viewY, count) ->
+                context.translate @parent.pos.getX(), @parent.pos.getY()
+                context.fillStyle = 'white'
+                context.fillRect(@pos.getX(), @pos.getY(), 100, 20)
     shapes:
         wall:
             type: 'box'
             pool: 'global'
-            vertices: [$V([0, 0]), $V([0, 20]), $V([100, 20]), $V([0, 20])]
+            vertices: [$V([0, 0]), $V([100, 0]), $V([100, 20]), $V([0, 20])]
 	
-grid.addCollision 'global', 'global', (a, b) ->
-    collide = yes
+grid.addCollision 'global', 'global', (a, b, eject) ->
+    collide = if eject then "#{eject.elements[0].toFixed(1)}, #{eject.elements[1].toFixed(1)}" else 'no'
 	
-class Dialog
 	
 #	rope = {
 #		pos: $V([0, 0]),
