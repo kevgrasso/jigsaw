@@ -210,7 +210,7 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
 
         if context? or priority?
             unless (context? and priority?)
-                throw new Error 'CollsionCell not given context AND priority'
+                throw new Error 'CollisionCell not given context AND priority'
             @subscribeTo(context, priority, trigID)
     
     #private
@@ -339,7 +339,7 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
             for own pool in cell
                 for shape in pool where shape.parent is object or shape is object
                     cell.deregister(shape)
-                    
+    
     deregisterByPool: (pool) ->
         for cell in @pools[pool]
             for shape in cell.shapes[pool]
@@ -358,151 +358,102 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
 
 #collision shape for attaching to actor
 class window.Shape
-    #you have to use this instead of the constructor because i'm dumb
-    #it's going soon anyways.
-    @create = (spec) ->
-        switch spec.type
-            when 'box'
-                new Box(spec)
-            when 'circle'
-                new Circle(spec)
-
-    constructor: ({@parent, @pool, @pos}) ->
-    
-    #private
-    
-    #returns the attributes of given shape
-    getAttrib = (shape) ->
-        value = {}
-        xOffset = shape.parent.pos.getX()+shape.pos.getX()
-        yOffset = shape.parent.pos.getY()+shape.pos.getY()
-
-        switch shape.type
-            when 'box'
-                value.top    = yOffset - (shape.height/2)
-                value.bottom = yOffset + (shape.height/2)
-                value.left   = xOffset - (shape.height/2)
-                value.right  = xOffset + (shape.height/2)
-            when 'circle'
-                value.x      = xOffset
-                value.y      = yOffset
-                value.radius = shape.radius
-        value
-        
-    #object with functions test collisions for each pair of shapes
-    testShape =
-        boxbox: (a, b) -> #hide
-            #If any of the sides from shape1 are outside of shape2
-            not (a.bottom <= b.top or a.top >= b.bottom or a.right <= b.left or a.left >= b.right)
-        circlecircle: (a, b) -> #hide
-            #if the distance between the two points is less than their combined radius,
-            #they are intersecting
-            (Math.sqrt( Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2) )) <= (a.radius + b.radius)
-        boxcircle:(a, b) -> #hide
-            #find closest X offset
-            if b.x <= a.left
-                aX = a.left
-            else if b.x >= a.right
-                aX = a.right
-            else
-                aX = b.x
-
-            #find closest Y offset
-            if b.y <= a.top
-                aY = a.top
-            else if b.y >= a.bottom
-                aY = a.bottom
-            else
-                aY = b.y
-            #if closest point is inside the circle, there is collision
-            (Math.sqrt( Math.pow(b.x - aX, 2) + Math.pow(b.y - aY, 2) )) <= 0
-
-    #public
+    constructor: ({@parent, @pool, @vertices}) ->
     
     parent: null #parent actor shape is attached to
     type: null #kind of shape (box, circle, etc)
     pool: null #pool this shape belongs to
-
-    pos: null #relative position of the shape
+    vertices: null
     
     #returns the absolute position
-    getAbsPos: ->
-        if @parent then @parent.pos.add(@pos) else @pos
+    getAbsVertex: (index) ->
+        if @parent then @parent.pos.add(@vertices[index]) else @pos[index]
+        
+    getAbsVertices: ->
+        @getAbsVertices(index) for index in [0...@vertices.length]
+    
+    #a lot of the following SAT collision testing code is by William of Code Zealot
+    
+    getShapeAxes= (shape1, sharedData) ->
+        #loop over the vertices
+        for vertex1, index in shape.getAbsVertices()
+            #get the next vertex
+            vertex2 = shape.vertices[index+1] ? shape.vertices[0]
+            
+            #subtract the two to get the edge vector
+            edge = vertex1.subtract vertex2
+            #get either perpendicular vector
+            normal = edge.perp()
+            #the perp method is just (x, y) => (-y, x) or (y, -x)
+            radians = normal.getAngle().toFixed(7)#7 is the default precision of sylvester
+            if sharedData[radians] then continue #don't angle push if it has already been tested
+            sharedData[radians] = true
+            normal
+        
+    projectShape = (shape, axis) ->
+        vertices = shape.vertices
+        min = max = axis.dot vertices[0]
+        for vertex in vertices[1...]
+            #NOTE: the axis must be normalized to get accurate projections
+            dotProduct = axis.dot vertex
+            if dotProduct < min
+                min = dotProduct
+            else if dotProduct > max
+                max = dotProduct
+        {min, max}
+        
+    getProjectionOverlap = ({min: min1, max: max1}, {min: min2, max: max2}) ->
+        if min1>max2
+            magnitude = min1-max2
+        else if min2<max1
+            magnitude = min2-max1
+        else
+            return false
+        
+        #check for containment
+        if (min1 >= min2 and max1 <= max2) or (min1 <= min2 and max1 >= max2)
+            #get the overlap plus the distance from the minimum end points
+            mins = abs projection1.min - projection2.min
+            maxs = abs projection1.max - projection2.max
+            #NOTE: depending on which is smaller you may need to
+            #negate the separating axis!!
+            magnitude += if mins < maxs then mins else maxs
+        magnitude      
+    
+    testAxes = (shape1, shape2, sharedData) ->
+        {minAngle, minMagnitude} = sharedData
+    
+        #loop over the axes
+        for axis in getShapeAxes shape1, shardedData
+            #project both shapes onto the axis
+            projection1 = projectShape shape1, axis
+            projection2 = projectShape shape2, axis
+            #get the overlap
+            magnitude = getProjectionOverlap projection1, projection2
+            #do the projections overlap?
+            if magnitude is false
+                #then we can guarantee that the shapes do not overlap
+                return false
+            #check for minimum
+            if magnitude < minMagnitude
+                #then set this one as the smallest
+                minMagnitude = magnitude
+                minAngle = axis
+        sharedData.minAngle = minAngle
+        sharedData.minMagnitude = minMagnitude
+        true
     
     #determines if shape is colliding with given shape
     isColliding: (otherShape) ->
-        #select appropriate insection detection algorithm
-        #and calculate required variables
-        testName = @type + otherShape.type
-
-        if testShape[testName]?
-            testShape[testName](getAttrib(this), getAttrib(otherShape))
-        else
-            testShape[otherShape.type + @type](getAttrib(otherShape), getAttrib(this))
-    
-    #returns vector of ejection given the other shape, its last move, and our last move
-    ejectShape: (other, otherMove, thisMove) ->
-        #this function assumes this and otherShape are colliding.
+        sharedData = {minAngle: null, minMagnitude: Infinity}
+        if not testAxis(this, otherShape, sharedData)
+            return false #value only continue tests if value is not false
         
-        #the basic principal is that otherShape should be ejected in either one
-        #of the directions it is moving or one one the directions this Shape is moving
-
-        #determine otherShape's movement vector from this Shape's POV)
-        dX = otherMove.getX() - thisMove.getX()
-        dY = otherMove.getY() - thisMove.getY()
-
-        #determine the depth of penetration for relevant directions 
-        if dY > 0		#moving down
-            yDepth = @getTop() - other.getBottom()
-        else if dY < 0          #moving up
-            yDepth = @getBottom() - other.getTop()
-
-        if dX > 0		#moving right
-            xDepth = @getLeft() - other.getRight()
-        else if dx < 0          #moving left
-            xDepth = @getRight() - other.getLeft()
-
-        #if moving diagonally, the direction of ejection
-        #is the one with the smallest depth of penetration
-        if (dX isnt 0) and (dY isnt 0)
-            if xDepth > yDepth
-                {x:0, y:yDepth}
-            else
-                {x:xDepth, y:0}
-        else
-            {x:xDepth ? 0, y:yDepth ? 0}
-
-#Box shape for use by Shape.create()
-class Box extends Shape
-    constructor: (spec) ->
-        {@height, @width} = spec
+        if not testAxis(otherShape, this, sharedData)
+            return false
+        #if both return true then we know that every axis had overlap on it
+        #so we can guarantee an intersection
         
-        super(spec)
-        @boundaryBox = this
-    type: 'box' #marks this as box type shape
-    height: 0 #height of box
-    width: 0 #width of box
-    
-    #returns  absolution position of each side
-    getTop: ->
-        @getAbsPos().getY()-(@height/2)
-    getBottom: ->
-        @getAbsPos().getY()+(@height/2)
-    getLeft: ->
-        @getAbsPos().getX()-(@width/2)
-    getRight: ->
-        @getAbsPos().getX()+(@width/2)
-
-#Circle shape for use by Shape.create()
-class Circle extends Shape
-    constructor: (spec) ->
-        @radius = spec.radius
         
-        super(spec)
-        this.boundaryBox = new Box
-            pool: @pool
-            pos: @getPos()
-            height: @radius
-            width: @radius
-    type: 'circle' #marks this as box type shape 
-    radius: 0 #radius of circle
+        {minAngle, minMagnitude} = sharedData
+        minAngle.toMagnitude(minMagnitude)

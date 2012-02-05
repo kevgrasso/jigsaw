@@ -140,9 +140,7 @@ player = new class extends Actor
                 bulk:
                     type: 'box'
                     pool: 'global'
-                    pos: $V [0, -40]
-                    width: 40
-                    height: 80
+                    vertices: [$V([-20, -80]), $([20, -80]), $V([20, 0]), $V([-20, 0])]
         trigSpec =
             state: 'global'
             obj: this
@@ -198,9 +196,7 @@ test = new Actor
         wall:
             type: 'box'
             pool: 'global'
-            pos: $V [50, 10]
-            width: 100
-            height: 20
+            vertices: [$V([0, 0]), $V([0, 20]), $V([100, 20]), $V([0, 20])]
 	
 grid.addCollision 'global', 'global', (a, b) ->
     collide = yes
