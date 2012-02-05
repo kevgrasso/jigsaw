@@ -129,7 +129,6 @@ class window.CollisionCell extends Cell
     #registers shapes of actor (or given shape) into cell+grid
     register: (obj) ->
         obj = {shapes: {obj}} if obj instanceof Shape
-        console.log(@gridX, @gridY)
         
         for own name, shape of obj.shapes
             pool = shape.pool
