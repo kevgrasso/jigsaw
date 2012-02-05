@@ -3,17 +3,18 @@
 <head>
 <meta charset="utf-8" />
 <title>Kevin Grasso's wacky HTML 5 "video game"</title>
-<script type="application/javascript">"use strict";</script>
-<script type="application/javascript" charset="utf-8" src="js\sylvester.src.js"></script>
-<script type="application/javascript" charset="utf-8" src="js\sylvextend.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\functions.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\trigger.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\input.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\dataclasses.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\layerclasses.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\gridclasses.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\collisionclasses.js"></script>
-<script type="application/javascript" charset="utf-8" src="lib\init.js"></script>
+<script>"use strict";</script>
+<script src="js\sylvester.src.js"></script>
+<script src="js\sylvextend.js"></script>
+<script src="lib\functions.js"></script>
+<script src="lib\trigger.js"></script>
+<script src="lib\input.js"></script>
+<script src="lib\dataclasses.js"></script>
+<script src="lib\layerclasses.js"></script>
+<script src="lib\gridclasses.js"></script>
+<script src="lib\collisionclasses.js"></script>
+<script src="lib\loadtracker.js"></script>
+<script src="lib\init.js"></script>
 <style>
 canvas {
 	border: 2px solid #aaaaaa;
@@ -21,7 +22,7 @@ canvas {
 </style>
 </head>
 <body>
-	<canvas id="display" width="740" height="500">You need a modern web browser to play.</canvas>
+	<canvas width="740" height="500">You need a modern web browser to play.</canvas>
 	
 	<br /><button onclick="include('ztest');">test</button>
 </body>
