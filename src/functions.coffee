@@ -103,7 +103,7 @@ Object::isEmpty = (args...) ->
     exemptions = {}
 
     exemptions[key] = true for key in args
-    return no for own key in this when not exemptions[key]
+    return no for own key of this when not exemptions[key]
     yes
 
 #returns true if given value is part of an object

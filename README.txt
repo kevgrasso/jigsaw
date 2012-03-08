@@ -34,29 +34,31 @@ written by Kevin Grasso in Coffeescript
 -mouse input
 -Actor::attach(subscribe = true)
 -init moved to Context
--grid is spatial hash
--SimpleCollision
+*collision grid is spatial hash
+*infinite grid for simple collision system
 -circle type shapes supported again
 -shortcut shape definitions
 -keyboard input xUp to xLift (xDown too?)
--change surface images to layers
--auto-calculation of dimensions for actors
+-sound mixer
+-JigsawEnvironment for variable
+-animation
 
 upcoming:
-*map display
-*map movement
-*map load
-*map flags
-*map dynamic block definitions
-*multi-maps
-*loadTracker is mass loader
-*Dialog
-*sound mixer
-*animation
-*multi-grids
-*extended sound
-*map editor
-*A* search?
-*simple particle emitter?
-*true randomizers?
+-map display
+-map movement
+-map load
+-map patches
+-map dynamic tile definitions
+-map tile combos
+-tile apply & activate but for for spikes-- first enter -- initiate
+-multi-maps
+-loadTracker can use raw strings
+-Dialog--monkey island style -- very dynamic --getstring function --getstringarray
+-collision multi-grids
+-extended sound
+-map editor
+-A* search?
+-simple particle emitter?
+-true randomizers?
+-package manager
 

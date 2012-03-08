@@ -2,74 +2,96 @@
 
 #default cell
 class window.Cell
-    constructor: (@grid, @gridX, @gridY) ->
-        @top = gridY*@grid.cellHeight
-        @bottom = (gridY+1)*@grid.cellHeight
-        @left = gridX*@grid.cellWidth
-        @right = (gridX+1)*@grid.cellWidth
+    constructor: (@grid, @gridPos) ->
+        @cellSize = @grid.cellSize
+        if @cellSize
+            [gridX, gridY] = @gridPos.elements
+            [cellWidth, cellHeight] = @grid.cellSize.elements
+            absX = gridX*cellWidth
+            absY = gridY*cellHeight
+
+            @topLeft = $V [absX, absY]
+            @bottomRight = @topLeft.add @grid.cellSize
+        else
+            @topLeft = $V [-Infinity, -Infinity]
+            @bottomRight = $V [Infinity, Infinity]
     
     grid: null #grid which cell is a part of
+    cellSize: null
     
     #position in grid array
-    gridX: 0
-    gridY: 0
+    gridPos: null
     
     #absolute coordinates of borders
-    top: 0
-    bottom: 0
-    left: 0
-    right: 0
+    topLeft: null
+    bottomRight: null
     
     #get cell by relative position
-    getRelCell: (relX, relY) ->
+    getRelCell: (relPos) ->
+        absPos = relPos.add(@gridPos)
+        [absX, absY] = absPos.elements
         @grid[@gridX+relX]?[@gridY+relY] ? null
 
 #chops coordinate space into Cells
 class window.Grid
     constructor: (spec) ->
-        {@cell} = spec if spec.cell?
-        {@gridWidth, @gridHeight, @cellWidth, @cellHeight} = spec
+        {@gridStart, @gridStop, @cellSize} = spec
+        @CellType = spec.CellType ? Cell
+        
+        if @gridStop?
+            @gridStart = $V([0,0]) if not @gridStart?
+            
+            [gridStartX, gridStartY] = @gridStart.elements
+            [gridStopX, gridStopY] = @gridStop.elements
+            [cellWidth, cellHeight] = @cellSize.elements
+        
+            if gridStartX%cellWidth isnt 0 or gridStopX%cellWidth isnt 0 or
+                gridStartY%cellHeight isnt 0 or gridStartY%cellHeight isnt 0
+                    throw new Error("#{@gridStart.inspect()} doesn't divide into #{@cellSize.inspect()} evenly")
 
-        for gridX in [0..@gridWidth/@cellWidth]
-            column = this[gridX] = []
-            column[gridY] = new @cell(this, gridX, gridY) for gridY in [0..@gridHeight/@cellHeight]
-
-    cell: Cell #type of cell used in grid
-
-    #cell dimensions
-    cellHeight: 0
-    cellWidth: 0
+            for gridX in [gridStartX/cellWidth..gridStopX/cellWidth]
+                this[gridX] = {}
+                for gridY in [gridStartY/cellHeight..gridStopY/cellHeight]
+                    this[gridX][gridY] = new @Cell(this, $V [gridX, gridY])
+        else if @gridStart?
+            throw new Error "gridStart defined, but not gridStop"
+        else if not @cellSize?
+            this[0][0] = new @CellType(this, Vector.Zero(2))
+    
+    CellType: null
+    cellSize: null
+    
     #grid dimensions
-    gridHeight: 0
-    gridWidth: 0
+    gridStart: null
+    gridStop: null
     
     
     #converts absolute coords to their corresponding position in the grid array
-    getCX: (x) ->
-        Math.floor x/@cellWidth
-    getCY: (y) ->
-        Math.floor y/@cellHeight
+    getGridPos: (pos) ->
+        return $V([0,0]) unless @cellSize
+        
+        gridX = Math.floor pos.getX()/@cellSize.getX()
+        gridY = Math.floor pos.getY()/@cellSize.getY()
+    
+        $V [gridX, gridY]
     
     #returns cell at given position
     getCellAt: (pos) ->
-        cellX = @getCX(pos.getX())
-        cellY = @getCY(pos.getY())
+        cellPos = @getGrodPos pos
+        [cellX, cellY] = cellPos.elements
         
         this[cellX]?[cellY] ? null
     
-    #returns cell at given xy coordinate
-    getCellXY: (x, y) ->
-        this[@getCX(x)]?[@getCY(y)] ? null
-    
     #returns cells containing given bounds
-    getCellArray: (xLeft, xRight, yTop, yBottom) ->
-        gridLeft = @getCX xLeft
-        gridRight = @getCX xRight
-        gridTop = @getCY yTop
-        gridBottom = @getCY yBottom
+    getCellArray: (topLeftPos, bottomRightPos) ->
+        gridTopLeft = @getGridPos topLeftPos
+        gridBottomRight = @getGridPos bottomeRightPos
+        
+        [gridLeft, gridTop] = gridTopLeft.elements
+        [gridRight, gridBottom] = gridBottomRight.elements
 
-        (this[x][y] for y in [gridTop..gridBottom] for x in [gridLeft..gridRight])
+        (this[x]?[y] for y in [gridTop..gridBottom] for x in [gridLeft..gridRight])
     
     getAllCells: ->
-        [].concat (cell for cell in row for own column, row of this when isNumeric(column))...
+        [].concat (cellfor cell in row for own column, row of this when isNumeric(column))...
                 

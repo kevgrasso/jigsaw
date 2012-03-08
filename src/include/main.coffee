@@ -42,23 +42,18 @@ debug = new Layer
 
         context.fillText("X:#{player.pos.getX()}", 0, 20)
         context.fillText("Y:#{player.pos.getY()}",0, 40)
-        context.fillText("TL:#{player.topLeftCell?.gridX}, #{player.topLeftCell?.gridY}", 100, 20)
-        context.fillText("BL:#{player.bottomLeftCell?.gridX}, #{player.bottomLeftCell?.gridY}", 100, 40)
-        context.fillText("TR:#{player.topRightCell?.gridX}, #{player.topRightCell?.gridY}", 200, 20)
-        context.fillText("BR:#{player.bottomRightCell?.gridX}, #{player.bottomRightCell?.gridY}", 200, 40)
+        context.fillText("TL:#{player.topLeftCell?.gridPos.inspect()}", 100, 20)
+        context.fillText("BL:#{player.bottomLeftCell?.gridPos.inspect()}", 100, 40)
+        context.fillText("TR:#{player.topRightCell?.gridPos.inspect()}", 200, 20)
+        context.fillText("BR:#{player.bottomRightCell?.gridPos.inspect()}", 200, 40)
         context.fillText("#{player.id}", 600, 20)
-        context.fillText("xspeed:#{player.xspeed}", 0, 60)
-        context.fillText("yspeed:#{player.yspeed}", 0, 80)
 
         context.fillText("eject:#{collide}", 600, 40)
     viewport: Viewport
     z:100
 
 grid = new CollisionGrid
-    gridWidth: 740
-    gridHeight: 500
-    cellWidth: 120
-    cellHeight: 125
+    cellSize: $V [225, 225]
 
     state: 'global'
     priority: 85
@@ -169,7 +164,7 @@ test = new Actor
             vertices: [$V([0, 0]), $V([100, 0]), $V([100, 20]), $V([0, 20])]
 	
 grid.addCollision 'global', 'global', (a, b, eject) ->
-    collide = if eject then "#{eject.elements[0].toFixed(1)}, #{eject.elements[1].toFixed(1)}" else 'no'
+    collide = if eject then "#{eject.inspect()}" else 'no'
 	
 	
 #	rope = {

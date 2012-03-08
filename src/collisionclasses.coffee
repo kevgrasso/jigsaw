@@ -3,13 +3,13 @@
 #ties together sprites and shapes for coherent movement
 class window.Actor
     constructor: (spec) ->
-        {pos, sprites, shapes, grid, top, bottom, left, right} = spec
-        @pos = pos ? Vector.Zero(2)
+        {@pos, sprites, shapes, @grid, @topLeft, @bottomRight} = spec
+        @pos ?= Vector.Zero(2)
 
         @sprites = {}
         if sprites?
             for own name, spec of sprites
-                spec.parent = this;
+                spec.parent = this
                 @sprites[name] = new Sprite(spec)
         @shapes = {}
         if shapes?
@@ -17,17 +17,22 @@ class window.Actor
                     spec.parent = this
                     @shapes[name] = new Shape(spec)
 
-        @grid = grid if grid
-
         @moveQueue = [].extend
             pushRel: (vector) ->
                 @push {rel: vector.dup()}
             pushAbs: (vector) ->
                 @push {abs: vector.dup()}
-        @top = top ? 0
-        @bottom = bottom ? 0
-        @left = left ? 0
-        @right = right ? 0
+        
+        @topLeft ?= Vector.Zero(2)
+        @bottomRight ?= Vector.Zero(2)
+        @topRight = $V [@bottomRight.getX(), @topLeft.getY()]
+        @bottomLeft = $V [@topLeft.getX(), @bottomRight.getY()]
+        
+        if @grid?
+            @topLeftCell = @grid.insert(this, @pos.add @topLeft)
+            @topRightCell = @grid.insert(this, @pos.add @topRight)
+            @bottomLeftCell = @grid.insert(this, @pos.add @bottomLeft)
+            @bottomRightCell = @grid.insert(this, @pos.add @bottomRight)
 
         @dimAdjust()
     
@@ -40,55 +45,26 @@ class window.Actor
     lastMove: null #vector containing the previous movement
 
     #relative location of dimensions
-    top: 0
-    bottom: 0
-    left: 0
-    right: 0
+    topLeft: null
+    topRight: null
+    bottomLeft: null
+    bottomRight: null
 
     #cells containing the entity's corners
     topLeftCell: null
     topRightCell: null
     bottomLeftCell: null
     bottomRightCell: null
-
+    
+    #
+    dimRecalc: ->
+    
     #recalculates dimensions and reregisters shapes
     dimAdjust: ->
-        grid = @grid
-
-        if grid?
-            #calculate each edge and match to a row or column on the grid
-            gridLeftX = grid.getCX @left + @pos.getX()
-            gridRightX = grid.getCX @right + @pos.getX()
-            gridTopY = grid.getCY @top + @pos.getY()
-            gridBottomY = grid.getCY @bottom + @pos.getY()
-
-            #top left corner
-            if @topLeftCell isnt grid[gridLeftX]?[gridTopY] ? null
-                @topLeftCell.deregister(this) if @topLeftCell?
-
-                @topLeftCell = grid[gridLeftX]?[gridTopY] ? null
-                @topLeftCell.register(this) if @topLeftCell?
-
-            #bottom left corner
-            if @bottomLeftCell isnt grid[gridLeftX]?[gridBottomY] ? null
-                @bottomLeftCell.deregister(this) if @bottomLeftCell?
-
-                @bottomLeftCell = grid[gridLeftX]?[gridBottomY] ? null
-                @bottomLeftCell.register(this) if @bottomLeftCell?
-
-            #top right corner
-            if @topRightCell isnt grid[gridRightX]?[gridTopY] ? null
-                @topRightCell.deregister(this) if @topRightCell isnt null
-
-                @topRightCell = grid[gridRightX]?[gridTopY] ? null
-                @topRightCell.register(this) if @topRightCell?
-
-            #bottom right corner
-            if @bottomRightCell isnt grid[gridRightX]?[gridBottomY] ? null
-                @bottomRightCell.deregister(this) if @bottomRightCell?
-                
-                @bottomRightCell = grid[gridRightX]?[gridBottomY] ? null
-                @bottomRightCell.register(this) if @bottomRightCell?
+        @topLeftCell = @topLeftCell?.update(this, @pos.add @topLeft)
+        @topRightCell = @topRightCell?.update(this, @pos.add @topRight)
+        @bottomLeftCell = @bottomLeftCell?.update(this, @pos.add @bottomLeft)
+        @bottomRightCell = @bottomRightCell?.update(this, @pos.add @bottomRight)
     
     #precalculates result of next move from moveQueue
     getMove: (emptyQueue = false) ->
@@ -99,7 +75,7 @@ class window.Actor
         loop
             movement = @moveQueue.pop()
             break if not movement?
-        
+            
             buffer = buffer.add movement.rel if movement.rel
             buffer = movement.abs if movement.abs
 
@@ -156,7 +132,7 @@ class window.CollisionCell extends Cell
                     @grid.pools[pool][@getID()] = this
                     @grid.poolcount[pool][@getID()] = 1
                     @grid.poolcount[pool].count += 1
-        undefined
+        this
     
     #registers shapes of actor (or given shape) into cell+grid
     deregister: (obj) ->
@@ -183,12 +159,26 @@ class window.CollisionCell extends Cell
                     if @grid.poolcount[pool].count is 0
                         delete @grid.pools[pool]
                         delete @grid.poolcount[pool]
-        undefined
+        @shapes.isEmpty()
+    
+    #updates grid state to new position, returning containing cell
+    update: (obj, absPos) ->
+        gridPos = @grid.getGridPos(absPos)
+        [gridX, gridY] = gridPos.elements
+        
+        if @grid[gridX]?[gridY] isnt this
+            isEmpty = @deregister obj
+            if isEmpty then @grid.removeCell @gridPos
+            @grid.insert(obj, absPos)
+        else this
 
 #grid for managing collisions
 class window.CollisionGrid extends Grid     #TODO: subgrids
     constructor: (spec) ->
         {state, priority, trigID} = spec
+        spec.CellType ?= CollisionCell
+        if spec.gridStart? or spec.gridStop? and not spec.gridSize? #todo: simple collision
+            throw new Error "CollisionGrid can not use grid dimensions"
         super(spec)
         
         @pools = {}
@@ -284,13 +274,12 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
         undefined
 
     #public
-    cell: CollisionCell #use CollisionCell as the default cell type
-
+    
     #subgrid: null #grid to be compared against
 
     pools: null #documents cells have shapes from each pool
     poolcount: null #documents how many shapes are subscribed to each cell
-
+    
     collisions: null #list of collisions to look for
     
     #subscribe this grid to Trigger
@@ -338,6 +327,33 @@ class window.CollisionGrid extends Grid     #TODO: subgrids
         processGroups(this, group1, group2, collisionList)
 
         collisionList
+    
+    #add 
+    addCell: (gridPos) ->
+        [gridX, gridY] = gridPos.elements
+        
+        this[gridX] ?= {}
+        cell = this[gridX][gridY] = new @CellType(this, gridPos)
+    
+    #
+    removeCell: (gridPos) ->
+        [gridX, gridY] = gridPos.elements
+        
+        delete this[gridX][gridY]
+        if this[gridX].isEmpty()
+            delete this[gridX]
+        
+        
+    #insert actor or shape into the grid
+    insert: (obj, absPos) ->
+        gridPos = @getGridPos absPos
+        [gridX, gridY] = gridPos.elements
+        
+        cell = this[gridX]?[gridY]
+        if not cell then cell = @addCell gridPos
+        cell.register obj
+        
+        cell
     
     #check all collisions on list
     step: ->
